@@ -126,6 +126,8 @@ body.vs .atk{display:flex}
 .st-tabs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
 .st-tabs .chip{flex:none}
 @media (pointer:coarse){ .chip{padding:6px 16px;min-height:38px} .pad:active{filter:brightness(.92)} }
+body.zm #tripBtn,body.zm #grabBtn{display:none !important}
+body.zm #keys,body:not(.zm) #zkeys{display:none !important}
 .stage.two .card{padding:8px 18px}
 .stage.two .opts .chips{margin-bottom:6px;gap:6px}
 .stage.two .card h1{font-size:clamp(32px,5vw,46px)}
@@ -361,8 +363,8 @@ body.vs .keys .k-atk{display:inline}
   <header class="hud">
     <div class="item score"><span id="scoreLbl">النتيجة</span> <b id="score">0</b></div>
     <div class="item">أعلى نتيجة <b id="best">0</b></div>
-    <div class="item">النقاط <b id="coins">0</b></div>
-    <div class="item energy">الطاقة <span class="bar" id="ebar"><i id="efill"></i></span></div>
+    <div class="item"><span id="coinsLbl">النقاط</span> <b id="coins">0</b></div>
+    <div class="item energy"><span id="energyLbl">الطاقة</span> <span class="bar" id="ebar"><i id="efill"></i></span></div>
     <button class="mute" id="acctBtn" type="button">دخول</button>
     <button class="mute" id="fs" type="button" hidden>ملء الشاشة</button>
     <button class="mute" id="exitBtn" type="button" hidden>خروج</button>
@@ -376,6 +378,9 @@ body.vs .keys .k-atk{display:inline}
       <span class="k-atk" id="kTrip"><kbd>E</kbd> كعبلة</span><span class="k-atk" id="kGrab"><kbd>R</kbd> مسك</span><span class="k-atk" id="kBrick"><kbd>Q</kbd> <span id="kWName">طوبة</span> <b id="kBrickN">1</b></span>
       <span><kbd>P</kbd> إيقاف</span>
     </div>
+    <div class="keys" id="zkeys" aria-hidden="true">
+      <span><kbd>→</kbd> قدام</span><span><kbd>←</kbd> ورا</span><span><kbd>Space</kbd> قفز (مرتين)</span><span><kbd>↓</kbd> نزول من المنصة</span><span><kbd>F</kbd> نار</span><span><kbd>P</kbd> إيقاف</span>
+    </div>
     <div class="overlay" id="overlay">
       <div class="card">
         <h1 id="ovTitle"></h1>
@@ -385,6 +390,7 @@ body.vs .keys .k-atk{display:inline}
             <span class="opt-lbl">الوضع</span>
             <button class="chip" data-mode="free" type="button">جري حر</button>
             <button class="chip" data-mode="race" type="button">سباق ضد الكمبيوتر</button>
+            <button class="chip" data-mode="zombie" type="button">زومبي</button>
             <button class="chip" data-mode="online" type="button">أونلاين</button>
           </div>
           <div class="chips"><button class="chip" id="openStore" type="button">المتجر <span class="cdot"></span><b id="walletN">0</b></button></div>
@@ -414,6 +420,7 @@ body.vs .keys .k-atk{display:inline}
             <button class="chip" data-pl="4" type="button">4</button>
             <button class="chip" data-pl="6" type="button">6</button>
           </div>
+          <details class="how" id="zHow" hidden><summary>طريقة لعب الزومبي</summary><div>اوصل لآخر الطريق. الزومبي بييجوا من قدام ومن ورا، ومبيعرفوش يطلعوا فوق المنصات (بيعدّوا من تحتها). امشي قدام وورا بالأسهم (سرعة ثابتة)، واقفز مرتين، واضرب بزرار النار (F أو Q أو E). على الأرض الضرب في الناحية اللي بتبصلها، ولو فوق منصة والزومبي تحتك التصويب بيروح ناحيتهم لوحده. الإسعاف الأحمر فوق المنصات بيرجّع صحتك، والسهم لتحت بينزلك من المنصة. النتيجة نقاط وأرقام قياسية بس.</div></details>
           <div class="recline" id="eventLine"></div>
           <div class="recline" id="recLine"></div>
           <div class="long" id="dailyLine"></div>
@@ -608,7 +615,7 @@ const LEVELS = {
   hard:{ miss:.03, boostAt:35, soon:.45, drinkP:.85, chargeBelow:35, trip:.6,  brick:.5,  grab:.3,  dodge:.9  }
 };
 let mode = load('stickrun:mode', 'race'), level = load('stickrun:level', 'mid');
-if(mode !== 'free' && mode !== 'race' && mode !== 'online') mode = 'race';
+if(mode !== 'free' && mode !== 'race' && mode !== 'online' && mode !== 'zombie') mode = 'race';
 if(!LEVELS[level]) level = 'mid';
 let best = parseInt(load('stickrun:best', '0'), 10) || 0;
 let cpuN = Math.max(1, Math.min(3, parseInt(load('stickrun:cpus', '1'), 10) || 1));
@@ -1710,6 +1717,7 @@ $('supText').addEventListener('keydown', e => e.stopPropagation());
 function bankRun(){
   if(runBanked || !pw) return;
   runBanked = true;
+  if(mode === 'zombie') return;
   lastEarned = 0; earnNote = '';
   dailyAdd('coins', pw.coinCount | 0); dailyAdd('dist', pw.dist | 0); dailyAdd('near', pw.nearN | 0); dailyAdd('combo', pw.bestCombo | 0, true);
 }
@@ -2009,6 +2017,8 @@ function applyMode(){
   $('scoreLbl').textContent = mode === 'free' ? 'النتيجة' : 'المسافة (م)';
   document.body.classList.toggle('vs', mode !== 'free');
   lastScore = -1; uiMe = uiCpu = -1;
+  zApplyUi();
+  el.best.textContent = mode === 'zombie' ? zBest(raceM) : best;
   layout();
 }
 
@@ -2023,10 +2033,10 @@ function updateHud(){
   const e = Math.round(w.energy);
   if(e !== lastE){ lastE = e; el.efill.style.width = e + '%'; }
   if(w.boosting !== lastBoosting){ lastBoosting = w.boosting; el.ebar.classList.toggle('boost', w.boosting); }
-  const wc = pw.ammo, wsig = wc + ':' + acct.projectile;
+  const wc = pw.ammo, wsig = wc + ':' + acct.projectile + ':' + mode;
   if(wsig !== lastAmmo){
     lastAmmo = wsig;
-    const wn = LOOK_NAMES[acct.projectile] || 'طوبة';
+    const wn = mode === 'zombie' ? 'رصاص' : (LOOK_NAMES[acct.projectile] || 'طوبة');
     $('wName').textContent = wn; $('kWName').textContent = wn;
     $('brickN').textContent = wc; $('kBrickN').textContent = wc;
   }
@@ -2105,7 +2115,7 @@ function hideOverlay(){ el.overlay.hidden = true; document.body.classList.remove
 
 function showReady(){
   showOverlay('ستيك رن',
-    '<details class="how"><summary>طريقة اللعب</summary><span class="long">اجري أبعد ما تقدر، واطلع على الدرجات، واقفز فوق الأشواك، وانزلق تحت الحبال، وخد مشروبات الطاقة عشان تملا الباور.<br>' +
+    '<details class="how runhow"><summary>طريقة اللعب</summary><span class="long">اجري أبعد ما تقدر، واطلع على الدرجات، واقفز فوق الأشواك، وانزلق تحت الحبال، وخد مشروبات الطاقة عشان تملا الباور.<br>' +
     'في السباق: انت والكمبيوتر على نفس المسار وتشوفوا بعض لما تكونوا قريبين، وأول واحد يوصل خط النهاية يكسب (طول السباق بتختاره من فوق)، يعني اللي قدام في المسار هو اللي بيكسب. النقاط اللي في المسار (العملات الصفرا) بتملا الطاقة، بس مبتتحولش لعملات المتجر: عملات المتجر بتيجي من الفوز في السباقات (أونلاين أو ضد الكمبيوتر) والتحديات. وتقدر تعمل كعبلة للخصم لو جنبك فيقع على وشه، أو تمسكه عشان تبطّأه، أو ترمي عليه طوبة (بتلاقي الطوب في المسار). لو وقعت بتستنى ثانيتين وتكمل.<br></span>' +
     '<span class="kb">القفز: <kbd>مسافة</kbd> أو <kbd>↑</kbd> (خفيف = قصيرة، ممسوك = عالية)<br>' +
     'الانزلاق: <kbd>↓</kbd> &nbsp; التسريع: <kbd>→</kbd> &nbsp; شحن أسرع: <kbd>←</kbd> (بيبطّأ شوية) &nbsp; إيقاف: <kbd>P</kbd><br>كعبلة: <kbd>E</kbd> &nbsp; مسك: <kbd>R</kbd> (امسك) &nbsp; طوبة: <kbd>Q</kbd></span>' +
@@ -2164,6 +2174,9 @@ function paintOpts(){
   $('plChips').hidden = mode !== 'online';
   paintPl();
   $('onlineBox').hidden = mode !== 'online';
+  $('zHow').hidden = mode !== 'zombie';
+  $('dailyLine').hidden = mode === 'zombie';
+  const rh = el.text.querySelector('.runhow'); if(rh) rh.hidden = mode === 'zombie';
   const rec = recOf(raceM);
   $('recLine').textContent = mode !== 'free' && rec ? 'أفضل وقت ليك في ' + raceM + ' م: ' + rec.toFixed(1) + ' ث' : '';
   $('dailyLine').innerHTML = dailyHtml();
@@ -2202,7 +2215,7 @@ const canStart = () => state === 'ready' || ((state === 'dead' || state === 'fin
 
 function newWorlds(){
   const seed = (Math.random() * 4294967296) >>> 0;
-  runBanked = false; lastEarned = 0; recNote = '';
+  runBanked = false; lastEarned = 0; recNote = ''; zOn = false; zs = null;
   pw = makeWorld(seed, true);
   pw.skin = acct.skin; pw.look = acct.projectile;
   opps = [];
@@ -2225,7 +2238,8 @@ function startGame(){
   hideOverlay();
   applyMode();
   last = performance.now();
-  if(mode === 'race'){ state = 'countdown'; cdT = 3; cpuBegin(); }
+  if(mode === 'zombie'){ zBegin(); state = 'countdown'; cdT = 3; }
+  else if(mode === 'race'){ state = 'countdown'; cdT = 3; cpuBegin(); }
   else state = 'playing';
 }
 function primaryAction(){ if(mode === 'online') onlineReady(); else startGame(); }
@@ -2248,7 +2262,7 @@ exitBtn.addEventListener('click', () => {
 function pause(){
   if(mode === 'online') return;                  // you can't pause someone else's race
   if(state === 'playing'){
-    state = 'paused'; slideHeld = false; boostHeld = false; chargeHeld = false; grabHeld = false; syncPad(); showPaused();
+    state = 'paused'; slideHeld = false; boostHeld = false; chargeHeld = false; grabHeld = false; fireHeld = false; syncPad(); showPaused();
   }
 }
 function resume(){ if(state === 'paused'){ state = 'playing'; hideOverlay(); last = performance.now(); } }
@@ -2286,16 +2300,17 @@ function checkFinish(){
 }
 
 /* ---------- input ---------- */
-function jump(){ if(state === 'playing' && !pw.dead) worldJump(pw); }
+function jump(){ if(state !== 'playing') return; if(zOn){ zJump(); return; } if(!pw.dead) worldJump(pw); }
 function canAttack(){ return state === 'playing' && mode !== 'free' && !pw.dead && !safeStart(pw); }
 function doTrip(){
+  if(zOn){ if(state === 'playing') fireHeld = true; return; }
   if(!canAttack() || pw.tripCd > 0) return;
   if(mode === 'race'){ tripAttempt(pw, opps.map(o => o.w)); return; }
   pw.tripCd = TRIP_CD; pw.kickT = .3; myTp++;                      // online: the other player's game decides if it landed
   pres({ tp:myTp, tx:Math.round(pw.scroll), th:Math.round(pw.P.h) });
   beep(260, 140, .1, 'square', .05);
 }
-function doBrick(){ if(canAttack()) throwWeapon(pw, opps.filter(o => !o.dnf).map(o => o.w)); }
+function doBrick(){ if(zOn){ if(state === 'playing') fireHeld = true; return; } if(canAttack()) throwWeapon(pw, opps.filter(o => !o.dnf).map(o => o.w)); }
 function syncPad(){
   el.slide.classList.toggle('on', slideHeld);
   el.boost.classList.toggle('on', boostHeld);
@@ -2324,6 +2339,8 @@ addEventListener('keydown', e => {
     if(!e.repeat) doTrip();
   }else if(k === 'KeyQ'){
     if(!e.repeat) doBrick();
+  }else if(k === 'KeyF'){
+    if(zOn && state === 'playing') fireHeld = true;
   }else if(k === 'KeyR'){
     grabHeld = true;
   }else if(k === 'Escape' || k === 'KeyP'){
@@ -2337,6 +2354,7 @@ addEventListener('keyup', e => {
   if(e.code === 'ArrowRight' || e.code === 'KeyD'){ boostHeld = false; syncPad(); }
   if(e.code === 'ArrowLeft' || e.code === 'KeyA'){ chargeHeld = false; syncPad(); }
   if(e.code === 'KeyR') grabHeld = false;
+  if(e.code === 'KeyE' || e.code === 'KeyQ' || e.code === 'KeyF') fireHeld = false;
   if(e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'KeyW') jumpKey = false;
 });
 
@@ -2363,6 +2381,7 @@ holdPad(el.boost, () => { boostHeld = true; }, () => { boostHeld = false; });
 holdPad(el.charge, () => { chargeHeld = true; }, () => { chargeHeld = false; });
 $('tripBtn').addEventListener('pointerdown', e => { e.preventDefault(); doTrip(); });
 $('brickBtn').addEventListener('pointerdown', e => { e.preventDefault(); doBrick(); });
+['pointerup', 'pointercancel', 'pointerleave'].forEach(t => $('brickBtn').addEventListener(t, () => { fireHeld = false; }));
 holdPad($('grabBtn'), () => { grabHeld = true; }, () => { grabHeld = false; });
 
 const mqPortraitPhone = matchMedia('(orientation:portrait) and (pointer:coarse) and (max-width:700px)');
@@ -2806,6 +2825,7 @@ function drawLane(lane){
   ctx.translate(0, lane.y0);
   ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.clip();
   if(w.shake > 0 && !reduceMotion) ctx.translate((Math.random() - .5) * 12 * w.shake, (Math.random() - .5) * 12 * w.shake);
+  if(zOn && zs){ drawZombieScene(); ctx.restore(); return; }
   drawBackground(w);
   drawSpeedLines(w);
   w.coins.forEach(drawCoin);
@@ -2857,7 +2877,7 @@ function drawBanner(){
 }
 
 function drawSafeNote(){
-  if(state !== 'playing' || !pw || pw.dead || pw.elapsed >= START_SAFE) return;
+  if(zOn || state !== 'playing' || !pw || pw.dead || pw.elapsed >= START_SAFE) return;
   ctx.save();
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.font = '700 18px "Cairo",sans-serif'; ctx.lineJoin = 'round'; ctx.lineWidth = 5; ctx.strokeStyle = C.paper; ctx.fillStyle = C.ink;
@@ -2875,6 +2895,7 @@ function render(){
 
 /* ---------- loop ---------- */
 function tick(h){
+  if(zOn){ zTick(h); if(goT > 0) goT -= h; return; }
   const i = pw.input;
   i.jump = jumpKey || jumpPtr; i.slide = slideHeld; i.boost = boostHeld; i.charge = chargeHeld; i.grab = grabHeld;
   stepWorld(pw, h);
@@ -2898,7 +2919,7 @@ function frame(now){
     let rem = dt;
     while(rem > 1e-6 && state === 'playing'){ const h = Math.min(rem, 1 / 90); tick(h); rem -= h; }
   }else if(state === 'dead'){
-    stepWorld(pw, dt);                                   // just the fall animation
+    if(!zOn) stepWorld(pw, dt);                          // just the fall animation
   }else if(state === 'ready'){
     allWorlds().forEach(w => { w.scroll += 160 * dt; w.P.phase += 160 * dt * .035; });
   }else if(state === 'countdown'){
@@ -2918,6 +2939,307 @@ function frame(now){
   render();
   requestAnimationFrame(frame);
 }
+
+
+/* ---------- zombie mode: shoot your way to the end of the road ---------- */
+const ZW = 250, ZHP = 100, ZMAG = 12, ZRELOAD = 1.1, ZFIRE_CD = .2, ZBUL_V = 1150, ZBUL_LIFE = .6, ZMAX = 16, ZHIT_CD = 1, ZSAFE = 4;
+// walkers are slow, runners fast and fragile, tanks slow and tough
+const ZTYPES = [
+  { sp:78,  hp:2, dmg:14, pts:10, w:13, h:62, col:'#5E9B4A' },
+  { sp:170, hp:1, dmg:10, pts:15, w:12, h:58, col:'#9ACB3A' },
+  { sp:54,  hp:7, dmg:30, pts:50, w:19, h:84, col:'#3F7A3A' }
+];
+let zOn = false, zs = null, fireHeld = false, zUiOn = null;
+const zBest = n => parseInt(load('stickrun:zbest:' + n, '0'), 10) || 0;
+const zRec = n => parseFloat(load('stickrun:zrec:' + n, '')) || 0;
+
+// raised platforms: you can stand on them, the zombies can't climb up, and they walk right underneath
+function zPlatforms(seed, fin){
+  const r = mulberry32(seed ^ 0x5A5A1234), out = [], tops = [90, 125, 160];
+  let x = 700;
+  while(x < fin - 700){
+    const w = 150 + r() * 130;
+    out.push({ x, w, top:tops[(r() * 3) | 0], kit:r() < .55 });
+    if(r() < .35) out.push({ x:x + w + 60 + r() * 50, w:110 + r() * 60, top:tops[(r() * 3) | 0], kit:r() < .4 });
+    x += w + 420 + r() * 500;
+  }
+  return out;
+}
+
+function setPadText(btn, t){
+  const nodes = [...btn.childNodes].filter(n => n.nodeType === 3 && n.textContent.trim());
+  if(nodes.length) nodes[nodes.length - 1].textContent = '\n      ' + t + '\n    ';
+}
+function zApplyUi(){
+  const on = mode === 'zombie';
+  document.body.classList.toggle('zm', on);
+  if(on === zUiOn) return;
+  zUiOn = on;
+  $('energyLbl').textContent = on ? 'الصحة' : 'الطاقة';
+  $('coinsLbl').textContent = on ? 'القتلى' : 'النقاط';
+  setPadText(el.boost, on ? 'قدام' : 'تسريع'); setPadText(el.charge, on ? 'ورا' : 'شحن'); setPadText(el.slide, on ? 'نزول' : 'انزلاق');
+  lastAmmo = -1; lastE = -1; lastCoins = -1;
+}
+
+function zBegin(){
+  const seed = (Math.random() * 4294967296) >>> 0, fin = raceM * 50;
+  zs = { fin, t:0, plats:zPlatforms(seed, fin), taken:new Set(), zombies:[], bullets:[], nextId:1, bid:0, spawnT:ZSAFE, rng:mulberry32(seed ^ 0xC0FFEE),
+         over:false, won:false,
+         me:{ wx:0, h:0, vy:0, on:true, jumps:2, face:1, hp:ZHP, inv:ZSAFE - 1, ammo:ZMAG, reload:0, cd:0, kills:0, down:false, dropT:0, phase:0, flash:0, aimA:0, fin:false } };
+  zOn = true;
+  Object.assign(pw, { scroll:0, dist:0, coinCount:0, energy:100, ammo:ZMAG, score:0, pop:null });
+}
+function zJump(){
+  const m = zs.me;
+  if(m.down || m.fin || zs.over || m.jumps <= 0) return;
+  const first = m.jumps === 2;
+  m.vy = first ? JUMP1 : JUMP2; m.jumps--; m.on = false;
+  beep(first ? 420 : 520, first ? 640 : 820, .09, 'square', .04);
+}
+
+function zFire(){
+  const z = zs, m = z.me;
+  if(m.down || m.fin || z.over || m.cd > 0 || m.reload > 0 || state !== 'playing') return;
+  if(m.ammo <= 0){ m.reload = ZRELOAD; return; }
+  m.ammo--; m.cd = ZFIRE_CD; m.flash = .08;
+  if(m.ammo <= 0) m.reload = ZRELOAD;
+  let dx = m.face, dy = 0;
+  if(m.h > 58){                                       // up on a platform: shoot at whoever is below
+    let best = null, bd = 460;
+    for(const e of z.zombies){ if(e.hp <= 0) continue; const d = Math.abs(e.x - m.wx); if(d < bd){ bd = d; best = e; } }
+    if(best){
+      const ex = best.x - m.wx, ey = ZTYPES[best.ty].h * .5 - (m.h + 38), L = Math.hypot(ex, ey) || 1;
+      dx = ex / L; dy = ey / L;
+      if(Math.abs(ex) > 8) m.face = ex > 0 ? 1 : -1;
+    }
+  }
+  m.aimA = Math.atan2(dy, Math.abs(dx));
+  z.bullets.push({ id:++z.bid, x:m.wx + dx * 20, h:m.h + 38 + dy * 20, vx:dx * ZBUL_V, vy:dy * ZBUL_V, t:ZBUL_LIFE });
+  beep(720, 240, .07, 'square', .04);
+}
+
+function zHurt(d, fromX){
+  const m = zs.me;
+  m.hp -= d; m.inv = ZHIT_CD; pw.shake = reduceMotion ? 0 : .5;
+  m.wx = Math.max(0, m.wx + (m.wx >= fromX ? 1 : -1) * 35);
+  beep(170, 70, .2, 'sawtooth', .06);
+  if(m.hp <= 0){ m.hp = 0; m.down = true; m.vy = 300; }
+}
+
+function zSpawn(m){
+  const z = zs, r = z.rng, prog = Math.min(1, m.wx / z.fin);
+  z.spawnT = Math.max(.7, 1.9 - prog * 1.2);
+  const rearOk = m.wx > 500, n = r() < .25 ? 2 : 1;
+  for(let i = 0; i < n; i++){
+    const front = !rearOk || r() < .55;
+    const ty = r() < .06 + .12 * prog ? 2 : (r() < .3 + .25 * prog ? 1 : 0);
+    const x = front ? Math.min(z.fin + 200, m.wx + W / 2 + 70 + r() * 260) : m.wx - W / 2 - 70 - r() * 260;
+    z.zombies.push({ id:z.nextId++, ty, x, hp:ZTYPES[ty].hp, dir:front ? -1 : 1, spd:.9 + r() * .25, flash:0, phase:r() * 6 });
+  }
+}
+
+function zKill(e){
+  zs.me.kills++;
+  popup(pw, '+' + ZTYPES[e.ty].pts);
+  beep(300, 620, .1, 'triangle', .05);
+}
+
+function zTick(h){
+  const z = zs, m = z.me;
+  z.t += h;
+  if(pw.pop){ pw.pop.life -= h * 1.1; if(pw.pop.life <= 0) pw.pop = null; }
+  if(pw.shake > 0) pw.shake = Math.max(0, pw.shake - h * 3);
+  if(m.flash > 0) m.flash -= h;
+  if(!m.down && !m.fin){
+    const dir = (boostHeld ? 1 : 0) - (chargeHeld ? 1 : 0);
+    if(dir){ m.wx = Math.max(0, Math.min(z.fin + 40, m.wx + dir * ZW * h)); m.face = dir; m.phase += h * 9; }
+    // jumping and landing; platforms are one-way: you jump up through them and land on top
+    if(m.dropT > 0) m.dropT -= h;
+    if(slideHeld && m.on && m.h > .5){ m.dropT = .28; m.on = false; m.vy = -60; }
+    if(m.vy > 0 && !(jumpKey || jumpPtr)) m.vy -= GRAV * 3 * h;
+    const prev = m.h;
+    m.vy -= GRAV * h; m.h += m.vy * h;
+    let floor = 0;
+    if(m.dropT <= 0) for(const p of z.plats) if(m.wx > p.x - 8 && m.wx < p.x + p.w + 8 && prev >= p.top - 6) floor = Math.max(floor, p.top);
+    if(m.h <= floor && m.vy <= 0){ m.h = floor; m.vy = 0; m.on = true; m.jumps = 2; }
+    else if(m.h > floor + .5) m.on = false;
+    // shooting
+    if(m.cd > 0) m.cd -= h;
+    if(m.reload > 0){ m.reload -= h; if(m.reload <= 0) m.ammo = ZMAG; }
+    if(fireHeld) zFire();
+    // medkits on the platforms
+    z.plats.forEach((p, i) => {
+      if(!p.kit || z.taken.has(i)) return;
+      if(Math.abs(m.wx - (p.x + p.w / 2)) < 36 && Math.abs(m.h - p.top) < 30){
+        z.taken.add(i); m.hp = Math.min(ZHP, m.hp + 35); popup(pw, '+35 صحة'); beep(500, 1000, .18, 'sine', .06);
+      }
+    });
+    // a zombie touching you (you are safe up on a platform, or while you're jumping over one)
+    if(m.inv > 0) m.inv -= h;
+    else for(const e of z.zombies){
+      const Ty = ZTYPES[e.ty];
+      if(e.hp > 0 && Math.abs(e.x - m.wx) < Ty.w + 10 && m.h < Ty.h * .8){ zHurt(Ty.dmg, e.x); break; }
+    }
+    if(m.wx >= z.fin){ m.fin = true; m.wx = z.fin; }
+  }else if(m.down){
+    m.vy -= GRAV * h; m.h = Math.max(0, m.h + m.vy * h); if(m.h === 0) m.vy = 0;
+  }
+  // zombies: they walk towards you along the ground
+  z.spawnT -= h;
+  if(z.spawnT <= 0 && z.zombies.length < ZMAX && !m.down && !m.fin) zSpawn(m);
+  const target = (!m.down && !m.fin) ? m : null;
+  for(const e of z.zombies){
+    if(e.flash > 0) e.flash -= h;
+    const Ty = ZTYPES[e.ty];
+    if(!target) continue;
+    const dx = target.wx - e.x;
+    e.dir = dx >= 0 ? 1 : -1;
+    if(Math.abs(dx) > 10 && !(target.h > 70 && Math.abs(dx) < 16)){ e.x += e.dir * Ty.sp * e.spd * h; e.phase += h * Ty.sp * .05; }   // under a platform they just stand there
+  }
+  // bullets
+  for(const b of z.bullets){
+    b.x += b.vx * h; b.h += b.vy * h; b.t -= h;
+    if(b.h < 0) b.t = 0;
+    for(const e of z.zombies){
+      const Ty = ZTYPES[e.ty];
+      if(e.hp > 0 && Math.abs(b.x - e.x) < Ty.w + 5 && b.h > -4 && b.h < Ty.h + 4){
+        e.hp--; e.flash = .12; b.t = 0;
+        if(e.hp <= 0) zKill(e); else beep(190, 100, .06, 'sawtooth', .035);
+        break;
+      }
+    }
+  }
+  z.bullets = z.bullets.filter(b => b.t > 0);
+  z.zombies = z.zombies.filter(e => e.hp > 0 && Math.abs(e.x - m.wx) < 1500);
+  // the hud numbers
+  Object.assign(pw, { scroll:m.wx, dist:Math.floor(m.wx / 50), coinCount:m.kills, energy:m.hp, ammo:m.reload > 0 ? 0 : m.ammo });
+  if(!z.over && (m.down || m.fin)) zOver(m.fin);
+}
+
+function zScore(){ const m = zs.me; return m.kills * 10 + Math.floor(m.wx / 50) + (m.fin ? 200 : 0); }
+function zOver(escaped){
+  const z = zs, m = z.me;
+  if(z.over) return;
+  z.over = true; z.won = escaped;
+  state = escaped ? 'finished' : 'dead'; endShown = false;
+  z.score = zScore();
+  z.newBest = z.score > zBest(raceM);
+  if(z.newBest) save('stickrun:zbest:' + raceM, z.score);
+  const prev = zRec(raceM);
+  z.newRec = escaped && (!prev || z.t < prev);
+  if(z.newRec) save('stickrun:zrec:' + raceM, z.t.toFixed(2));
+  z.prevRec = prev;
+  el.best.textContent = zBest(raceM);
+  beep(escaped ? 660 : 200, escaped ? 1320 : 60, .4, escaped ? 'triangle' : 'sawtooth', .06);
+  setTimeout(() => { if(state === 'finished' || state === 'dead') showZEnd(); }, 900);
+}
+function showZEnd(){
+  const z = zs; if(!z) return;
+  endShown = true;
+  let html = 'قتلى: <strong>' + z.me.kills + '</strong> — مسافة: <strong>' + Math.floor(z.me.wx / 50) + ' م</strong> من ' + raceM + '<br>النقاط: <strong>' + z.score + '</strong> — أعلى نقاط ليك في ' + raceM + ' م: <strong>' + zBest(raceM) + '</strong>';
+  if(z.newBest) html += '<br>رقم قياسي جديد في النقاط!';
+  if(z.won) html += '<br>وصلت في ' + z.t.toFixed(1) + ' ث' + (z.newRec ? ' — أسرع وقت ليك!' : (z.prevRec ? ' — أفضل وقت ' + z.prevRec.toFixed(1) + ' ث' : ''));
+  showOverlay(z.won ? 'نجوت!' : 'الزومبي مسكوك', html, 'العب تاني', true);
+}
+
+/* --- drawing --- */
+function drawZPlat(p, i, sx){
+  if(sx > W + 40 || sx + p.w < -40) return;
+  const y = ground - p.top;
+  ctx.save();
+  ctx.strokeStyle = C.ink; ctx.lineWidth = 3; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.globalAlpha = .45;
+  ctx.beginPath(); ctx.moveTo(sx + 10, y + 10); ctx.lineTo(sx + 10, ground); ctx.moveTo(sx + p.w - 10, y + 10); ctx.lineTo(sx + p.w - 10, ground); ctx.stroke();
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = C.paper; ctx.fillRect(sx, y, p.w, 10);
+  ctx.globalAlpha = .35; ctx.fillStyle = C.marker; ctx.fillRect(sx, y, p.w, 10); ctx.globalAlpha = 1;
+  ctx.strokeRect(sx, y, p.w, 10);
+  if(p.kit && !zs.taken.has(i)){
+    const cx = sx + p.w / 2, ky = y - 24 + Math.sin(T * 3) * 2;
+    ctx.fillStyle = C.paper; ctx.fillRect(cx - 10, ky, 20, 16); ctx.strokeRect(cx - 10, ky, 20, 16);
+    ctx.fillStyle = C.pencil; ctx.fillRect(cx - 2.5, ky + 2, 5, 12); ctx.fillRect(cx - 7, ky + 6, 14, 4);
+  }
+  ctx.restore();
+}
+
+function drawZombie(e, sx){
+  const Ty = ZTYPES[e.ty], s = Ty.h / 62;
+  ctx.save();
+  ctx.translate(sx, ground); ctx.scale(e.dir, 1);
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = e.ty === 2 ? 7 : 5;
+  ctx.strokeStyle = e.flash > 0 ? C.pencil : Ty.col;
+  const hip = [0, -30 * s], neck = [3 * s, -54 * s], sw = Math.sin(e.phase) * 14 * s, bob = Math.sin(e.phase * .7) * 3;
+  limb(neck, hip);
+  limb(hip, [sw * .5 + 4, -14 * s], [sw, 0]); limb(hip, [-sw * .5 + 4, -14 * s], [-sw, 0]);
+  limb([2 * s, -48 * s], [16 * s, -50 * s], [30 * s, -47 * s + bob]);
+  limb([2 * s, -44 * s], [14 * s, -44 * s], [26 * s, -40 * s - bob]);
+  ctx.fillStyle = C.paper; ctx.beginPath(); ctx.arc(6 * s, -63 * s, 9 * s, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = e.ty === 1 ? C.pencil : C.ink; ctx.lineWidth = 2;
+  const ex = 9 * s, ey = -65 * s;
+  ctx.beginPath(); ctx.moveTo(ex - 2.5, ey - 2.5); ctx.lineTo(ex + 2.5, ey + 2.5); ctx.moveTo(ex + 2.5, ey - 2.5); ctx.lineTo(ex - 2.5, ey + 2.5);
+  ctx.moveTo(4 * s, -59 * s); ctx.lineTo(11 * s, -59 * s); ctx.stroke();
+  ctx.restore();
+  if(e.ty === 2 && e.hp < Ty.hp){
+    ctx.save();
+    ctx.fillStyle = C.paper; ctx.fillRect(sx - 18, ground - Ty.h - 16, 36, 6);
+    ctx.fillStyle = C.pencil; ctx.fillRect(sx - 18, ground - Ty.h - 16, 36 * e.hp / Ty.hp, 6);
+    ctx.strokeStyle = C.ink; ctx.lineWidth = 1.5; ctx.strokeRect(sx - 18, ground - Ty.h - 16, 36, 6);
+    ctx.restore();
+  }
+}
+
+function drawZombieScene(){
+  const z = zs, m = z.me, cam = m.wx, X = x => W / 2 + (x - cam);
+  drawBackground({ scroll:cam });
+  drawFinish({ scroll:cam - (W / 2 - PX) });
+  z.plats.forEach((p, i) => drawZPlat(p, i, X(p.x)));
+  const edge = { l:0, r:0 };
+  for(const e of z.zombies){
+    const sx = X(e.x);
+    if(sx < -40){ if(sx > -760) edge.l++; continue; }
+    if(sx > W + 40){ if(sx < W + 760) edge.r++; continue; }
+    drawZombie(e, sx);
+  }
+  ctx.save();
+  ctx.strokeStyle = C.marker; ctx.lineWidth = 3; ctx.lineCap = 'round';
+  for(const b of z.bullets){
+    const sx = X(b.x), y = ground - b.h, L = Math.hypot(b.vx, b.vy) || 1;
+    ctx.beginPath(); ctx.moveTo(sx, y); ctx.lineTo(sx - b.vx / L * 16, y + b.vy / L * 16); ctx.stroke();
+  }
+  ctx.restore();
+  // the runner, facing the way you're going
+  const P = { h:m.h, on:m.on, sliding:false, phase:m.phase, rot:0, lying:m.down, fwd:false, sleep:false };
+  const fig = { P, dead:m.down, invuln:m.inv, kickT:0, slowT:0, grabbing:false, skin:pw.skin, elapsed:99, remote:true };
+  ctx.save();
+  ctx.translate(W / 2, 0); ctx.scale(m.face, 1); ctx.translate(-PX, 0);
+  drawFigure(fig, skinOf(fig).band || C.pencil);
+  if(!m.down){                                         // the gun
+    ctx.translate(PX + 4, ground - m.h - 44); ctx.rotate(-m.aimA);
+    ctx.fillStyle = C.ink; ctx.fillRect(0, -3, 24, 6); ctx.fillRect(2, 3, 6, 9);
+    if(m.flash > 0){ ctx.fillStyle = C.marker; ctx.beginPath(); ctx.moveTo(26, 0); ctx.lineTo(38, -6); ctx.lineTo(34, 0); ctx.lineTo(38, 6); ctx.closePath(); ctx.fill(); }
+  }
+  ctx.restore();
+  ctx.save();
+  ctx.translate(W / 2 - PX, 0); drawPop({ dead:m.down, P:{ h:m.h }, combo:0, pop:pw.pop });
+  ctx.restore();
+  // warnings for the ones about to arrive from off screen
+  ctx.save();
+  ctx.font = '700 15px "Cairo", sans-serif'; ctx.textAlign = 'center'; ctx.lineJoin = 'round'; ctx.lineWidth = 3; ctx.strokeStyle = C.ink;
+  for(const [n, right] of [[edge.l, false], [edge.r, true]]){
+    if(!n) continue;
+    const ex = right ? W - 22 : 22, ey = ground - 60, d = right ? 1 : -1;
+    ctx.globalAlpha = .65 + .35 * Math.sin(T * 10);
+    ctx.fillStyle = '#5E9B4A';
+    ctx.beginPath(); ctx.moveTo(ex + d * 12, ey); ctx.lineTo(ex - d * 8, ey - 14); ctx.lineTo(ex - d * 8, ey + 14); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = C.ink; ctx.fillText(String(n), ex - d * 2, ey - 20);
+  }
+  ctx.restore();
+  if(m.reload > 0){
+    ctx.save(); ctx.font = '700 15px "Cairo", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = C.ink;
+    ctx.fillText('تعبئة...', W / 2, ground - m.h - 100); ctx.restore();
+  }
+}
+
 
 /* ---------- updates: when a new version is published, everybody who isn't racing reloads ---------- */
 const hashText = s => { let h = 5381; for(let i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0; return s.length + ':' + h; };
@@ -2950,6 +3272,7 @@ setInterval(checkUpdate, 45000);
 function myActivity(){
   if(state === 'countdown' || state === 'playing' || state === 'paused' || (state === 'finished' && mode === 'online' && !net.resolved))
     return mode === 'online' ? 'سباق أونلاين' : (mode === 'race' ? 'ضد الكمبيوتر' : 'جري حر');
+  if(zOn && (state === 'countdown' || state === 'playing' || state === 'paused')) return 'زومبي';
   if(!storeEl.hidden) return 'المتجر';
   if(mode === 'online' && net.room) return 'غرفة أونلاين';
   return 'في القايمة';
