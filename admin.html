@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>لوحة تحكم ستيك رن</title>
+<style>
+  :root{--bg:#f6f3ea;--card:#fff;--ink:#1c1c1c;--muted:#6b665a;--line:#d9d3c2;--accent:#2a5bd7;--bad:#c0392b;--warn:#c27c0e;--good:#1e8449}
+  @media (prefers-color-scheme:dark){:root{--bg:#16181d;--card:#1f232b;--ink:#ecebe6;--muted:#9a9a93;--line:#323844;--accent:#6c97ff;--bad:#ff6b5c;--warn:#f0a93b;--good:#4cc38a}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 "Cairo","Segoe UI",Tahoma,sans-serif}
+  button{font:inherit;cursor:pointer;border:1.5px solid var(--ink);background:var(--card);color:var(--ink);border-radius:9px;padding:5px 12px}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  button.danger{background:var(--bad);border-color:var(--bad);color:#fff}
+  button.good{background:var(--good);border-color:var(--good);color:#fff}
+  button:disabled{opacity:.5;cursor:default}
+  input,textarea,select{font:inherit;padding:6px 10px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink)}
+  #gate{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;text-align:center}
+  header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;background:var(--card);border-bottom:1.5px solid var(--line);position:sticky;top:0;z-index:5}
+  header h1{font-size:18px;margin:0;flex:1}
+  nav{display:flex;gap:6px;flex-wrap:wrap;padding:10px 14px}
+  nav button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+  .badge{display:inline-block;min-width:20px;padding:0 6px;margin-inline-start:6px;border-radius:10px;background:var(--bad);color:#fff;font-size:12px;text-align:center}
+  main{padding:0 14px 40px;max-width:1100px;margin:0 auto}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  .stat{background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px}
+  .stat b{display:block;font-size:26px;line-height:1.2}
+  .stat span{color:var(--muted);font-size:13px}
+  .card{background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;margin:10px 0}
+  .card.high{border-color:var(--bad)} .card.warn{border-color:var(--warn)}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .grow{flex:1}
+  .muted{color:var(--muted);font-size:13px}
+  .tag{display:inline-block;padding:0 8px;border-radius:8px;border:1px solid var(--line);font-size:12px;margin-inline-end:4px}
+  .tag.bad{border-color:var(--bad);color:var(--bad)} .tag.good{border-color:var(--good);color:var(--good)} .tag.warn{border-color:var(--warn);color:var(--warn)}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;font-size:13px;margin:6px 0}
+  .kv dt{color:var(--muted)} .kv dd{margin:0;word-break:break-word}
+  .chat{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow:auto;padding:6px}
+  .m{max-width:80%;padding:6px 12px;border-radius:12px;border:1.5px solid var(--line);white-space:pre-wrap;word-break:break-word}
+  .m.user{align-self:flex-start} .m.admin{align-self:flex-end;background:var(--accent);border-color:var(--accent);color:#fff}
+  table{width:100%;border-collapse:collapse;font-size:13px} th,td{padding:4px 8px;border-bottom:1px solid var(--line);text-align:start}
+  #toast{position:fixed;bottom:16px;inset-inline:16px;max-width:520px;margin:auto;background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:12px;z-index:20;display:none}
+  h2{font-size:17px;margin:14px 0 4px}
+</style>
+</head>
+<body>
+<div id="gate"><h1>لوحة تحكم ستيك رن</h1><p id="gateMsg" class="muted">جاري التحميل...</p><div id="gateForm" class="row" hidden style="flex-direction:column;align-items:stretch;width:min(320px,100%)"><input id="gEmail" type="email" placeholder="الإيميل" dir="ltr"><input id="gPass" type="password" placeholder="الباسورد" dir="ltr"><button id="gateBtn" class="primary">دخول</button></div></div>
+<div id="app" hidden>
+  <header><h1>لوحة تحكم ستيك رن</h1><span id="who" class="muted"></span><button id="sound" title="صوت التنبيهات">الصوت: شغال</button><button id="out">خروج</button></header>
+  <nav id="tabs"></nav>
+  <main id="main"></main>
+</div>
+<div id="toast" role="status"></div>
+<script src="config.js"></script>
+<script src="vendor/supabase.js"></script>
+<script>
+(() => {
+'use strict';
+const CFG = window.SR_CONFIG;
+const sb = window.supabase.createClient(CFG.url, CFG.key, { auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true } });
+const $ = id => document.getElementById(id);
+
+// small DOM builder: everything that comes from the database goes in as text, never as HTML
+function h(tag, attrs, ...kids){
+  const e = document.createElement(tag);
+  if(attrs) for(const k in attrs){
+    const v = attrs[k];
+    if(k === 'class') e.className = v;
+    else if(k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else if(v !== false && v !== null && v !== undefined) e.setAttribute(k, v === true ? '' : v);
+  }
+  for(const kid of kids.flat(Infinity)){ if(kid === null || kid === undefined || kid === false) continue; e.append(kid.nodeType ? kid : document.createTextNode(String(kid))); }
+  return e;
+}
+async function rpc(name, args){ const { data, error } = await sb.rpc(name, args || {}); if(error) throw new Error(error.message || String(error)); return data; }
+async function tbl(q){ const { data, error } = await q; if(error) throw new Error(error.message || String(error)); return data || []; }
+const fmt = d => d ? new Date(d).toLocaleString('ar-EG', { dateStyle:'short', timeStyle:'short' }) : '—';
+let toastT = null;
+function toast(t){ const el = $('toast'); el.textContent = t; el.style.display = 'block'; clearTimeout(toastT); toastT = setTimeout(() => { el.style.display = 'none'; }, 3500); }
+const run = async (fn, ok) => { try{ const r = await fn(); if(ok) toast(ok); return r; }catch(e){ toast('خطأ: ' + (e.message || e)); throw e; } };
+
+/* ---------- gate ---------- */
+function showGate(msg, canSignIn){ $('gate').hidden = false; $('app').hidden = true; $('gateMsg').textContent = msg; $('gateForm').hidden = !canSignIn; }
+async function gateLogin(){
+  const { error } = await sb.auth.signInWithPassword({ email:$('gEmail').value.trim().toLowerCase(), password:$('gPass').value });
+  if(error){ $('gateMsg').textContent = 'الإيميل أو الباسورد غلط'; return; }
+  location.reload();
+}
+$('gateBtn').addEventListener('click', gateLogin);
+$('gPass').addEventListener('keydown', e => { if(e.key === 'Enter') gateLogin(); });
+$('out').addEventListener('click', async () => { await sb.auth.signOut(); location.reload(); });
+async function boot(){
+  try{
+    const { data } = await sb.auth.getSession();
+    if(!data.session){ showGate('ادخل بحساب الأدمن.', true); return; }
+    const admin = await rpc('is_admin');
+    if(admin !== true){ showGate('الحساب ' + (data.session.user.email || '') + ' مش أدمن.', true); return; }
+    $('who').textContent = data.session.user.email || '';
+    $('gate').hidden = true; $('app').hidden = false;
+    buildTabs(); await refreshBadges(); show(tab);
+    setInterval(refreshBadges, 10000);
+  }catch(e){ showGate('مشكلة في التحميل: ' + (e.message || e), true); }
+}
+
+/* ---------- alerts sound ---------- */
+let soundOn = true, ac = null, lastHigh = null;
+$('sound').addEventListener('click', () => { soundOn = !soundOn; $('sound').textContent = 'الصوت: ' + (soundOn ? 'شغال' : 'مقفول'); });
+function beep(){
+  if(!soundOn) return;
+  try{ ac = ac || new (window.AudioContext || window.webkitAudioContext)(); const o = ac.createOscillator(), g = ac.createGain(); o.connect(g); g.connect(ac.destination); o.frequency.value = 660; g.gain.value = .08; o.start(); o.stop(ac.currentTime + .25); }catch(e){}
+}
+
+/* ---------- tabs ---------- */
+const TABS = [['overview', 'نظرة عامة'], ['players', 'اللاعبين'], ['alerts', 'التنبيهات'], ['names', 'الأسماء'], ['support', 'الدعم'], ['races', 'السباقات'], ['bans', 'الحظر'], ['settings', 'الإعدادات']];
+let tab = 'overview', counts = {};
+function buildTabs(){
+  const nav = $('tabs'); nav.textContent = '';
+  for(const [id, label] of TABS){
+    const n = id === 'alerts' ? counts.open_alerts : id === 'names' ? counts.pending_names : id === 'support' ? counts.unread_support : 0;
+    nav.append(h('button', { 'aria-pressed':id === tab ? 'true' : 'false', onclick:() => show(id) }, label, n ? h('span', { class:'badge' }, n) : null));
+  }
+}
+async function refreshBadges(){
+  try{
+    counts = await rpc('admin_overview');
+    const high = await tbl(sb.from('alerts').select('id', { count:'exact' }).eq('severity', 'high').in('status', ['open', 'reviewing']));
+    if(lastHigh !== null && high.length > lastHigh) beep();
+    lastHigh = high.length;
+    buildTabs();
+    document.title = (counts.open_alerts ? '(' + counts.open_alerts + ') ' : '') + 'لوحة تحكم ستيك رن';
+  }catch(e){}
+}
+async function show(id){
+  tab = id; buildTabs();
+  const main = $('main'); main.textContent = '';
+  try{ await RENDER[id](main); }catch(e){ main.append(h('div', { class:'card high' }, 'مشكلة: ' + (e.message || e))); }
+}
+
+/* ---------- helpers ---------- */
+const names = {};                                                      // uid -> display name
+async function loadNames(ids){
+  const need = [...new Set(ids.filter(Boolean))].filter(i => !names[i]);
+  if(!need.length) return;
+  const rows = await tbl(sb.from('profiles').select('id,display_name').in('id', need));
+  for(const r of rows) names[r.id] = r.display_name;
+}
+const nm = id => names[id] || (id ? String(id).slice(0, 8) : '—');
+function kv(obj){ const dl = h('dl', { class:'kv' }); for(const k in obj){ dl.append(h('dt', null, k), h('dd', null, obj[k] === null || obj[k] === undefined || obj[k] === '' ? '—' : obj[k])); } return dl; }
+
+/* ---------- overview ---------- */
+async function renderOverview(box){
+  const o = await rpc('admin_overview'); counts = o;
+  const stats = [['اللاعبين', o.players], ['أونلاين (5 د)', o.online_5m], ['جداد 24 ساعة', o.new_24h], ['عملات في المحافظ', o.coins_in_wallets], ['سباقات 24 ساعة', o.races_24h], ['تنبيهات مفتوحة', o.open_alerts], ['أسماء مستنية', o.pending_names], ['رسايل دعم جديدة', o.unread_support], ['حظر شغال', o.active_bans]];
+  box.append(h('div', { class:'grid' }, stats.map(([l, v]) => h('div', { class:'stat' }, h('b', null, v), h('span', null, l)))));
+  const alerts = await tbl(sb.from('alerts').select('*').in('status', ['open', 'reviewing']).order('id', { ascending:false }).limit(5));
+  await loadNames(alerts.map(a => a.user_id));
+  box.append(h('h2', null, 'آخر التنبيهات المفتوحة'));
+  if(!alerts.length) box.append(h('div', { class:'muted' }, 'مفيش تنبيهات. كله هادي.'));
+  for(const a of alerts) box.append(h('div', { class:'card ' + (a.severity === 'high' ? 'high' : '') }, h('b', null, ALERT_NAMES[a.kind] || a.kind), ' — ', nm(a.user_id), ' · ', fmt(a.created_at)));
+}
+
+/* ---------- players ---------- */
+let playerQ = '';
+async function renderPlayers(box){
+  const inp = h('input', { placeholder:'ابحث بالاسم أو الإيميل', value:playerQ, class:'grow' });
+  const go = () => { playerQ = inp.value.trim(); show('players'); };
+  inp.addEventListener('keydown', e => { if(e.key === 'Enter') go(); });
+  box.append(h('div', { class:'row', style:'margin:10px 0' }, inp, h('button', { class:'primary', onclick:go }, 'بحث')));
+  const list = await rpc('admin_players', { p_q:playerQ || null, p_limit:100 });
+  box.append(h('div', { class:'muted' }, list.length + ' لاعب'));
+  for(const p of list){
+    const banned = !!p.ban;
+    box.append(h('div', { class:'card' + (banned ? ' high' : (p.flagged ? ' warn' : '')) },
+      h('div', { class:'row' }, h('b', { class:'grow' }, p.name), h('span', null, p.coins + ' عملة'),
+        banned ? h('span', { class:'tag bad' }, 'محظور: ' + (p.ban.reason || '')) : null, p.flagged && !banned ? h('span', { class:'tag warn' }, 'مشبوه') : null),
+      kv({ 'الإيميل':p.email, 'البلد / المنطقة':[p.country, p.tz].filter(Boolean).join(' / '), 'الجهاز':p.device, 'الشاشة':p.screen, 'اللغة':p.lang, 'جاي من':p.src, 'الجلسات':p.sessions, 'آخر ظهور':fmt(p.last_seen), 'انضم':fmt(p.created_at), 'وافق على الإشعار':p.consent ? 'أيوه' : 'لأ' }),
+      h('div', { class:'row' },
+        h('button', { class:'good', onclick:() => topup(p) }, 'شحن'),
+        h('button', { onclick:() => adjust(p) }, 'تعديل رصيد'),
+        h('button', { onclick:() => ledgerOf(p, box) }, 'سجل العملات'),
+        banned ? h('button', { onclick:() => unban(p) }, 'فك الحظر') : h('button', { class:'danger', onclick:() => ban(p) }, 'حظر'),
+        h('button', { onclick:() => openChat(p.id, p.name) }, 'رسايل'))));
+  }
+}
+async function topup(p){
+  const egp = parseFloat(prompt('المبلغ بالجنيه (100 عملة = 10 جنيه)؟'));
+  if(!(egp > 0)) return;
+  const method = prompt('وسيلة الدفع (instapay / vodafone / ...)؟') || '';
+  const ref = prompt('رقم العملية / ملاحظة؟') || '';
+  const r = await run(() => rpc('admin_topup', { p_uid:p.id, p_egp:egp, p_method:method, p_ref:ref }), 'اتشحن');
+  if(r) toast('اتضاف ' + r.coins_added + ' عملة. الرصيد الجديد ' + r.balance);
+  show('players');
+}
+async function adjust(p){
+  const d = parseInt(prompt('كام عملة تزود (موجب) أو تنقص (سالب)؟'), 10);
+  if(!d) return;
+  const note = prompt('السبب؟') || '';
+  await run(() => rpc('admin_adjust', { p_uid:p.id, p_delta:d, p_note:note }), 'اتعدّل');
+  show('players');
+}
+async function ban(p){
+  const reason = (prompt('سبب الحظر (هيظهر للاعب)؟') || '').trim();
+  if(!reason) return;
+  const wide = confirm('تحظر الجهاز والشبكة كمان؟\nOK = أيوه (حساب + جهاز + شبكة)\nCancel = الحساب بس');
+  const fp = wide && confirm('تحظر بصمة الجهاز التقريبية كمان؟ (أقوى، بس ممكن تمسك أجهزة شبه بعض)');
+  const n = await run(() => rpc('admin_ban_user', { p_uid:p.id, p_reason:reason, p_device:wide, p_ip:wide, p_fp:fp }), 'اتحظر');
+  if(n) toast('اتعمل ' + n + ' حظر');
+  show('players');
+}
+async function unban(p){ if(!confirm('تفك كل الحظر على ' + p.name + '؟')) return; await run(() => rpc('admin_unban_user', { p_uid:p.id }), 'اتفك الحظر'); show('players'); }
+async function ledgerOf(p, box){
+  const rows = await tbl(sb.from('ledger').select('*').eq('user_id', p.id).order('id', { ascending:false }).limit(50));
+  const audit = await rpc('admin_wallet_audit', { p_uid:p.id });
+  const t = h('table', null, h('tr', null, h('th', null, 'التاريخ'), h('th', null, 'التغيير'), h('th', null, 'السبب'), h('th', null, 'الرصيد')),
+    rows.map(r => h('tr', null, h('td', null, fmt(r.created_at)), h('td', null, (r.delta > 0 ? '+' : '') + r.delta), h('td', null, r.reason + (r.ref ? ' · ' + r.ref : '')), h('td', null, r.balance_after))));
+  const card = h('div', { class:'card' }, h('b', null, 'سجل عملات ' + p.name), ' ', h('span', { class:'tag ' + (audit.ok ? 'good' : 'bad') }, audit.ok ? 'الرصيد مطابق للسجل' : 'الرصيد مش مطابق! ' + audit.wallet + ' ≠ ' + audit.ledger_sum), t, h('button', { onclick:() => card.remove() }, 'إغلاق'));
+  box.prepend(card); card.scrollIntoView({ behavior:'smooth' });
+}
+
+/* ---------- alerts ---------- */
+const ALERT_NAMES = { coins_implausible:'عملات أكتر من الممكن', race_time_suspicious:'وقت سباق مستحيل', coins_spike:'عملات اتجمعت بسرعة' };
+async function renderAlerts(box){
+  const rows = await tbl(sb.from('alerts').select('*').in('status', ['open', 'reviewing']).order('id', { ascending:false }).limit(100));
+  await loadNames(rows.map(a => a.user_id));
+  if(!rows.length) box.append(h('div', { class:'card' }, 'مفيش تنبيهات مفتوحة.'));
+  for(const a of rows){
+    const d = a.details || {};
+    const detail = {};
+    for(const k in d) detail[k] = typeof d[k] === 'object' ? JSON.stringify(d[k]) : d[k];
+    const actions = a.race_id
+      ? [h('button', { class:'danger', onclick:() => verdict(a, true) }, 'غش (تعويض + حظر)'), h('button', { class:'good', onclick:() => verdict(a, false) }, 'سليم (ادفع الجايزة)')]
+      : [h('button', { class:'danger', onclick:() => setAlert(a, 'confirmed') }, 'مؤكد'), h('button', { class:'good', onclick:() => setAlert(a, 'cleared') }, 'مفيش مشكلة')];
+    box.append(h('div', { class:'card ' + (a.severity === 'high' ? 'high' : 'warn') },
+      h('div', { class:'row' }, h('b', { class:'grow' }, ALERT_NAMES[a.kind] || a.kind), h('span', { class:'muted' }, fmt(a.created_at))),
+      h('div', null, 'اللاعب: ', h('b', null, nm(a.user_id))),
+      kv(detail),
+      h('div', { class:'row' }, actions, a.user_id ? h('button', { onclick:() => { playerQ = nm(a.user_id); show('players'); } }, 'افتح اللاعب') : null)));
+  }
+}
+async function verdict(a, cheat){
+  const note = prompt(cheat ? 'ملاحظة (بتظهر كسبب الحظر)؟' : 'ملاحظة؟') || '';
+  if(cheat && !confirm('تأكيد: غش؟ هيتحظر اللاعب وعملاته هتتصفّر والباقيين هياخدوا تعويض.')) return;
+  const r = await run(() => rpc('admin_race_verdict', { p_race:a.race_id, p_cheat:cheat, p_note:note }), 'اتنفذ');
+  if(cheat && r) toast('اتعوّض ' + r.compensated + ' لاعب');
+  refreshBadges(); show('alerts');
+}
+async function setAlert(a, status){ const note = prompt('ملاحظة؟') || ''; await run(() => rpc('admin_alert_set', { p_id:a.id, p_status:status, p_note:note }), 'تمام'); refreshBadges(); show('alerts'); }
+
+/* ---------- names ---------- */
+async function renderNames(box){
+  const rows = await tbl(sb.from('name_requests').select('*').eq('status', 'pending').order('id'));
+  await loadNames(rows.map(r => r.user_id));
+  if(!rows.length) box.append(h('div', { class:'card' }, 'مفيش أسماء مستنية.'));
+  for(const r of rows){
+    box.append(h('div', { class:'card' }, h('div', { class:'row' }, h('b', { class:'grow' }, r.requested), h('span', { class:'muted' }, 'الاسم الحالي: ' + nm(r.user_id) + ' · ' + fmt(r.created_at))),
+      h('div', { class:'row' }, h('button', { class:'good', onclick:async () => { await run(() => rpc('admin_decide_name', { p_id:r.id, p_approve:true, p_reason:null }), 'اتوافق'); refreshBadges(); show('names'); } }, 'وافق'),
+        h('button', { class:'danger', onclick:async () => { const why = prompt('سبب الرفض؟') || ''; await run(() => rpc('admin_decide_name', { p_id:r.id, p_approve:false, p_reason:why }), 'اترفض'); refreshBadges(); show('names'); } }, 'ارفض'))));
+  }
+}
+
+/* ---------- support ---------- */
+async function renderSupport(box){
+  const threads = await rpc('admin_support_threads');
+  if(!threads.length) box.append(h('div', { class:'card' }, 'مفيش رسايل.'));
+  for(const t of threads){
+    box.append(h('div', { class:'card' }, h('div', { class:'row' }, h('b', { class:'grow' }, t.name), t.unread ? h('span', { class:'badge' }, t.unread) : null, t.banned ? h('span', { class:'tag bad' }, 'محظور') : null, h('span', { class:'muted' }, fmt(t.last_at))),
+      h('div', { class:'muted' }, t.email), h('div', null, t.last_body), h('button', { class:'primary', onclick:() => openChat(t.user_id, t.name) }, 'افتح المحادثة')));
+  }
+}
+async function openChat(uid, name){
+  tab = 'support'; buildTabs();
+  const box = $('main'); box.textContent = '';
+  const msgs = await tbl(sb.from('support_messages').select('*').eq('user_id', uid).order('id'));
+  const chat = h('div', { class:'chat' }, msgs.map(m => h('div', { class:'m ' + m.sender }, m.body)));
+  const ta = h('textarea', { rows:'2', class:'grow', maxlength:'1000', placeholder:'اكتب ردك...' });
+  const send = h('button', { class:'primary', onclick:async () => { const t = ta.value.trim(); if(!t) return; await run(() => rpc('admin_reply', { p_uid:uid, p_body:t }), 'اتبعت'); refreshBadges(); openChat(uid, name); } }, 'ابعت');
+  box.append(h('div', { class:'row' }, h('button', { onclick:() => show('support') }, 'رجوع'), h('b', null, name)), h('div', { class:'card' }, chat), h('div', { class:'row' }, ta, send));
+  chat.scrollTop = chat.scrollHeight;
+  sb.from('support_messages').update({ read_by_admin:true }).eq('user_id', uid).eq('sender', 'user').then(() => refreshBadges());   // opening a thread marks it read
+}
+
+/* ---------- races ---------- */
+async function renderRaces(box){
+  const rows = await tbl(sb.from('races').select('*').order('created_at', { ascending:false }).limit(40));
+  const players = rows.length ? await tbl(sb.from('race_players').select('*').in('race_id', rows.map(r => r.id))) : [];
+  await loadNames(players.map(p => p.user_id));
+  for(const r of rows){
+    const ps = players.filter(p => p.race_id === r.id).sort((a, b) => (a.rank || 99) - (b.rank || 99));
+    const cls = r.status === 'review' ? 'high' : (r.status === 'void' ? 'warn' : '');
+    box.append(h('div', { class:'card ' + cls },
+      h('div', { class:'row' }, h('b', { class:'grow' }, (r.room_code || '—') + ' · ' + r.length_m + ' م'), h('span', { class:'tag ' + (r.status === 'done' ? 'good' : (r.status === 'running' ? '' : 'bad')) }, r.status), h('span', { class:'muted' }, fmt(r.created_at))),
+      h('table', null, ps.map(p => h('tr', null, h('td', null, p.rank || '—'), h('td', null, nm(p.user_id)), h('td', null, p.finish_ms ? (p.finish_ms / 1000).toFixed(1) + ' ث' : 'ما وصلش'), h('td', null, p.dist_m ? p.dist_m + ' م' : ''), h('td', null, p.flagged ? h('span', { class:'tag bad' }, 'مشبوه') : null)))),
+      (r.status === 'review' || r.status === 'done') ? h('div', { class:'row' }, h('button', { class:'danger', onclick:() => verdict({ race_id:r.id }, true) }, 'اعتبره غش'), r.status === 'review' ? h('button', { class:'good', onclick:() => verdict({ race_id:r.id }, false) }, 'سليم') : null) : null));
+  }
+}
+
+/* ---------- bans ---------- */
+async function renderBans(box){
+  const rows = await tbl(sb.from('bans').select('*').order('id', { ascending:false }).limit(100));
+  await loadNames(rows.filter(b => b.kind === 'account').map(b => b.value));
+  if(!rows.length) box.append(h('div', { class:'card' }, 'مفيش حظر.'));
+  for(const b of rows){
+    box.append(h('div', { class:'card' }, h('div', { class:'row' }, h('span', { class:'tag ' + (b.active ? 'bad' : '') }, b.kind), h('b', { class:'grow' }, b.kind === 'account' ? nm(b.value) : String(b.value).slice(0, 14) + '…'), h('span', { class:'muted' }, fmt(b.created_at))),
+      h('div', null, b.reason), b.active ? h('button', { onclick:async () => { await run(() => rpc('admin_unban', { p_id:b.id }), 'اتفك'); show('bans'); } }, 'فك الحظر') : h('span', { class:'muted' }, 'اتفك ' + fmt(b.lifted_at))));
+  }
+}
+
+/* ---------- settings ---------- */
+const CFG_LABELS = { starting_coins:'عملات البداية', run_coin_rate:'كام عملة محفظة لكل عملة جولة', run_daily_cap:'حد العملات اليومي من اللعب', coin_price_egp:'سعر العملة بالجنيه', race_fee:'رسوم دخول السباق', race_prize:'جايزة الفايز', race_comp_bonus:'تعويض زيادة لو فيه غشاش', max_run_coins_per_100m:'أقصى عملات جولة لكل 100 متر', rename_price:'سعر بطاقة الاسم' };
+async function renderSettings(box){
+  const cfg = await tbl(sb.from('config').select('*').order('key'));
+  box.append(h('h2', null, 'الاقتصاد'));
+  for(const c of cfg){
+    const inp = h('input', { type:'number', step:'any', value:String(c.value), style:'width:110px' });
+    box.append(h('div', { class:'card row' }, h('span', { class:'grow' }, CFG_LABELS[c.key] || c.key), inp,
+      h('button', { class:'primary', onclick:async () => { const v = parseFloat(inp.value); if(isNaN(v)) return; await run(() => rpc('admin_set_config', { p_key:c.key, p_value:v }), 'اتحفظ'); } }, 'احفظ')));
+  }
+  box.append(h('h2', null, 'أسعار المتجر (بالعملات)'));
+  const cat = await tbl(sb.from('catalog').select('*').order('kind').order('sort'));
+  for(const c of cat){
+    const inp = h('input', { type:'number', min:'0', value:String(c.price), style:'width:90px' });
+    const on = h('input', { type:'checkbox' }); on.checked = !!c.active;
+    box.append(h('div', { class:'card row' }, h('span', { class:'grow' }, c.name + ' (' + c.kind + ')'), inp, h('label', null, on, ' معروض'),
+      h('button', { class:'primary', onclick:async () => { const v = parseInt(inp.value, 10); if(isNaN(v) || v < 0) return; await run(() => rpc('admin_set_price', { p_item:c.id, p_price:v, p_active:on.checked }), 'اتحفظ'); } }, 'احفظ')));
+  }
+}
+
+const RENDER = { overview:renderOverview, players:renderPlayers, alerts:renderAlerts, names:renderNames, support:renderSupport, races:renderRaces, bans:renderBans, settings:renderSettings };
+boot();
+})();
+</script>
+</body>
+</html>
