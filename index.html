@@ -128,7 +128,10 @@ body.vs .atk{display:flex}
 @media (pointer:coarse){ .chip{padding:6px 16px;min-height:38px} .pad:active{filter:brightness(.92)} }
 body.zm #tripBtn,body.zm #grabBtn{display:none !important}
 body.zm #keys,body:not(.zm) #zkeys{display:none !important}
-.stage.two .card{padding:8px 18px}
+.stage.two .card{padding:8px 18px;max-width:min(96%,780px)}
+.stage.two .opts{display:flex;flex-wrap:wrap;justify-content:center;column-gap:16px}
+.stage.two .opts .online,.stage.two .opts .recline,.stage.two .opts #dailyLine,.stage.two .opts .how{flex-basis:100%}
+.stage.two .chip{padding:3px 12px;font-size:14px}
 .stage.two .opts .chips{margin-bottom:6px;gap:6px}
 .stage.two .card h1{font-size:clamp(32px,5vw,46px)}
 .stage.two .card .txt{margin:4px 0 8px}
@@ -425,6 +428,11 @@ body.vs .keys .k-atk{display:inline}
           <div class="recline" id="recLine"></div>
           <div class="long" id="dailyLine"></div>
           <div class="online" id="onlineBox" hidden>
+            <div class="chips" id="kindChips" role="group" aria-label="نوع الغرفة">
+              <span class="opt-lbl">النوع</span>
+              <button class="chip" data-kind="race" type="button">سباق</button>
+              <button class="chip" data-kind="zombie" type="button">زومبي جماعي</button>
+            </div>
             <div class="orow">
               <button class="chip" id="myNameShow" type="button" title="غيّر الاسم من المتجر">...</button>
               <input class="rinput" id="roomCode" maxlength="16" placeholder="كود الغرفة" autocomplete="off" autocapitalize="none" spellcheck="false" aria-label="كود الغرفة">
@@ -1138,11 +1146,12 @@ function aiControl(w, others, dt, lvl){
 const net = {
   code:'', room:null, chan:null, connected:false, states:{}, seen:{}, mine:{},
   joining:false, err:'', rooms:[], raceId:null, race:null, offset:0, raceT0:0,
-  finishing:false, claim:null, resolved:false, starting:false, blockUntil:0,
+  finishing:false, claim:null, resolved:false, starting:false, blockUntil:0, zrun:null,
   lastRoomPoll:0, lastRoomsPoll:0, lastWinPoll:0, lastSend:0, polling:false, winPolling:false, fee:3, prize:6
 };
 let lastLobbyUi = 0, roomSig = null;
 let roomPrivate = load('stickrun:priv', '0') === '1';
+let roomKind = load('stickrun:kind', 'race') === 'zombie' ? 'zombie' : 'race';
 const RT_GAP = n => n <= 2 ? .066 : (n <= 4 ? .1 : .125);     // how often to send, depending on how many are racing
 const iAmOwner = () => !!(net.room && acct.id && net.room.owner === acct.id);
 function setStatus(t){ $('roomStatus').textContent = t; }
@@ -1171,6 +1180,12 @@ function openChannel(code){
     const r = msg && msg.payload && msg.payload.race;
     if(r && (r.players || []).some(p => p.id === acct.id) && (state === 'ready' || (state === 'finished' && endShown))) beginRace(r);
   });
+  ch.on('broadcast', { event:'g' }, msg => {          // ... or that a zombie run has
+    const r = msg && msg.payload && msg.payload.zrun;
+    if(r && (r.players || []).some(p => p.id === acct.id) && (state === 'ready' || (state === 'finished' && endShown))) zBeginCoop(r);
+  });
+  ch.on('broadcast', { event:'z' }, msg => zOnSnap(msg && msg.payload));       // the host's zombies
+  ch.on('broadcast', { event:'zh' }, msg => zOnHit(msg && msg.payload));       // somebody hit one of them
   ch.subscribe(status => { net.connected = status === 'SUBSCRIBED'; });
   net.chan = ch;
 }
@@ -1187,11 +1202,14 @@ function pres(o){ Object.assign(net.mine, o); for(const k in o) if(o[k] === null
 /* ----- rooms ----- */
 // room codes are never typed by whoever makes the room: 5 random consonants/digits (no vowels, so no word can come out). The server enforces the same format.
 const CODE_CHARS = 'bcdfghjkmnpqrstvwxz23456789';
-function randomRoomCode(){
+// zombie rooms are the ones whose code starts with z (the server enforces that too); race codes never do
+function randomRoomCode(zombie){
   const b = new Uint32Array(5);
   if(window.crypto && crypto.getRandomValues) crypto.getRandomValues(b); else for(let i = 0; i < 5; i++) b[i] = Math.random() * 4294967296;
-  return Array.from(b, v => CODE_CHARS[v % CODE_CHARS.length]).join('');
+  const first = zombie ? 'z' : CODE_CHARS.replace('z', '')[b[0] % (CODE_CHARS.length - 1)];
+  return first + Array.from(b.slice(1), v => CODE_CHARS[v % CODE_CHARS.length]).join('');
 }
+const isZRoom = () => !!(net.room && net.room.kind === 'zombie');
 async function joinRoom(opts){
   const create = opts === true;
   const code = create ? '' : $('roomCode').value.toLowerCase().replace(/[^a-z0-9_.-]/g, '').replace(/^[^a-z0-9]+/, '').slice(0, 16);
@@ -1204,13 +1222,15 @@ async function joinRoom(opts){
   net.joining = true; updateOnlineUi();
   try{
     let st;
+    const zombie = create ? roomKind === 'zombie' : code.charAt(0) === 'z';
+    if(!zombie){ try{ await rpc('zroom_leave'); }catch(e){} }          // you can only be in one room
     if(create){
       for(let i = 0; ; i++){
-        const c = randomRoomCode();
-        try{ st = await rpc('room_create', { p_code:c, p_max:roomMax, p_len:raceM, p_private:roomPrivate }); $('roomCode').value = c; break; }
+        const c = randomRoomCode(zombie);
+        try{ st = await rpc(zombie ? 'zroom_create' : 'room_create', { p_code:c, p_max:roomMax, p_len:raceM, p_private:roomPrivate }); $('roomCode').value = c; break; }
         catch(e){ if(!/room exists/.test(e.message) || i >= 3) throw e; }
       }
-    }else st = await rpc('room_join', { p_code:code });
+    }else st = await rpc(zombie ? 'zroom_join' : 'room_join', { p_code:code });
     enterRoom(st);
   }catch(e){ net.err = errAr(e); }
   net.joining = false; updateOnlineUi();
@@ -1223,14 +1243,14 @@ function enterRoom(st){
 }
 async function leaveRoomNow(){
   closeChannel();
-  const had = !!net.room;
+  const had = !!net.room, z = isZRoom();
   net.room = null; net.code = '';
-  if(had && sb && acct.signedIn){ try{ await rpc('room_leave'); }catch(e){} }
+  if(had && sb && acct.signedIn){ try{ await rpc(z ? 'zroom_leave' : 'room_leave'); }catch(e){} }
 }
 async function onlineReady(){
   if(!acct.signedIn){ showAuth('سجّل دخول عشان تلعب أونلاين'); return; }
   if(!net.room || net.room.status !== 'open') return;
-  try{ net.room = await rpc('room_ready', { p_ready:true }); net.err = ''; }catch(e){ net.err = errAr(e); }
+  try{ net.room = await rpc(isZRoom() ? 'zroom_ready' : 'room_ready', { p_ready:true }); net.err = ''; }catch(e){ net.err = errAr(e); }
   updateOnlineUi();
 }
 $('roomGo').addEventListener('click', () => joinRoom());
@@ -1245,7 +1265,10 @@ $('roomPriv').addEventListener('click', () => {
 
 async function pollRooms(){
   if(!sb || !acct.signedIn || acct.ban) return;
-  try{ net.rooms = (await rpc('list_rooms')) || []; }catch(e){}
+  try{
+    const [a, b] = await Promise.all([rpc('list_rooms'), rpc('list_zrooms').catch(() => [])]);
+    net.rooms = (a || []).concat((b || []).map(r => Object.assign({}, r, { kind:'zombie' })));
+  }catch(e){}
   paintRooms();
 }
 function paintRooms(){
@@ -1253,7 +1276,7 @@ function paintRooms(){
   list.hidden = !sb || !acct.signedIn;
   if(list.hidden) return;
   const rooms = net.rooms.slice().sort((a, b) => (a.status === 'running') - (b.status === 'running') || (a.players >= a.max_players) - (b.players >= b.max_players) || (a.code < b.code ? -1 : 1));
-  const sig = rooms.map(r => [r.code, r.players, r.max_players, r.length_m, r.status, r.code === net.code ? 1 : 0].join(':')).join('|');
+  const sig = rooms.map(r => [r.code, r.players, r.max_players, r.length_m, r.status, r.kind || '', r.code === net.code ? 1 : 0].join(':')).join('|');
   if(sig === roomSig) return;
   roomSig = sig;
   list.textContent = '';
@@ -1270,7 +1293,7 @@ function paintRooms(){
     b.type = 'button'; b.className = 'room'; b.disabled = mine || full || running;
     const a = document.createElement('span'); a.textContent = r.code;
     const c = document.createElement('span');
-    c.textContent = (mine ? 'أنت هنا' : (running ? 'سباق شغال' : (full ? 'ممتلئة' : 'مفتوحة'))) + ' · ' + r.players + '/' + r.max_players + ' · ' + r.length_m + ' م';
+    c.textContent = (r.kind === 'zombie' ? 'زومبي · ' : '') + (mine ? 'أنت هنا' : (running ? 'شغالة' : (full ? 'ممتلئة' : 'مفتوحة'))) + ' · ' + r.players + '/' + r.max_players + ' · ' + r.length_m + ' م';
     b.append(a, c);
     b.addEventListener('click', () => { $('roomCode').value = r.code; joinRoom(); });
     list.appendChild(b);
@@ -1280,7 +1303,7 @@ function paintRooms(){
 function updateOnlineUi(){
   if(mode !== 'online') return;
   const again = state === 'finished' && endShown;
-  let msg, label = again ? 'سباق تاني' : 'جاهز', can = false;
+  let msg, label = again ? (isZRoom() ? 'جولة تانية' : 'سباق تاني') : 'جاهز', can = false;
   if(!sb){ msg = 'الأونلاين مش متاح دلوقتي (السيرفر مش متصل).'; label = 'غير متاح'; }
   else if(!acct.signedIn){ msg = 'سجّل دخول عشان تلعب أونلاين.'; label = 'سجّل دخول'; can = true; }
   else if(acct.ban){ msg = 'حسابك محظور من الأونلاين: ' + ((acct.ban && acct.ban.reason) || ''); label = 'محظور'; }
@@ -1292,6 +1315,7 @@ function updateOnlineUi(){
     if(r.status === 'running'){ msg = 'فيه سباق شغال في الغرفة، استنى لحد ما يخلص.'; label = 'السباق شغال'; }
     else if(n < 2){ msg = 'أنت في الغرفة ' + r.code + ' (1/' + r.max + '). مستني لاعبين يدخلوا نفس الكود. السباق: ' + r.length_m + ' م.'; label = 'مستني اللاعبين'; }
     else if(iReady){ msg = 'مستني الباقيين... (' + readyN + '/' + n + ' جاهزين)'; label = 'مستني الباقيين'; }
+    else if(r.kind === 'zombie'){ msg = 'غرفة زومبي جماعية ' + n + '/' + r.max + '. جاهزين ' + readyN + '/' + n + '. دوس جاهز. اتعاونوا وصّلوا لآخر الطريق (' + r.length_m + ' م) من غير رسوم، والنتيجة نقاط بس.'; can = true; }
     else{ msg = 'في الغرفة ' + n + '/' + r.max + '. جاهزين ' + readyN + '/' + n + '. دوس جاهز. الدخول ' + net.fee + ' عملات والفايز ياخد ' + net.prize + '. طول السباق ' + r.length_m + ' م.'; can = true; }
     if(net.err) msg = net.err + ' — ' + msg;
     if(!net.connected) msg = 'بوصل بالخدمة... ' + msg;
@@ -1299,6 +1323,7 @@ function updateOnlineUi(){
   setStatus(msg);
   el.btn.textContent = label;
   el.btn.disabled = !can;
+  $('kindChips').hidden = !!net.room;
   paintLen(); paintPl(); paintRooms();
   fitCard(false);
 }
@@ -1308,17 +1333,17 @@ async function pollRoom(){
   if(!net.room || net.polling || !sb) return;
   net.polling = true;
   try{
-    const st = await rpc('room_state', { p_code:net.code });
+    const st = await rpc(isZRoom() ? 'zroom_state' : 'room_state', { p_code:net.code });
     if(!st){ closeChannel(); net.room = null; net.code = ''; net.err = 'الغرفة اتقفلت.'; }
     else{
       net.room = st;
       if(st.length_m && !net.raceId) setRaceLen(st.length_m);
       if(el.overlay.hidden === false && !el.ovOpts.hidden) updateOnlineUi();        // show who joined or got ready right away
       const lobby = state === 'ready' || (state === 'finished' && endShown);
-      if(lobby && iAmOwner() && st.status === 'open' && st.members.length >= 2 && st.members.every(m => m.ready) && !net.starting && performance.now() > net.blockUntil) startRaceAsOwner();
+      if(lobby && iAmOwner() && st.status === 'open' && st.members.length >= 2 && st.members.every(m => m.ready) && !net.starting && performance.now() > net.blockUntil) (st.kind === 'zombie' ? startZombieAsOwner() : startRaceAsOwner());
       if(lobby && !iAmOwner() && st.status === 'running'){
-        const r = await rpc('my_race');
-        if(r && r.race_id !== net.raceId) beginRace(r);
+        if(st.kind === 'zombie'){ const r = await rpc('my_zombie'); if(r && r.run_id !== net.zrun) zBeginCoop(r); }
+        else{ const r = await rpc('my_race'); if(r && r.race_id !== net.raceId) beginRace(r); }
       }
     }
   }catch(e){}
@@ -1338,6 +1363,43 @@ async function startRaceAsOwner(){
     }
   }catch(e){ net.err = errAr(e); net.blockUntil = performance.now() + 4000; }
   net.starting = false;
+}
+
+async function startZombieAsOwner(){
+  net.starting = true;
+  try{
+    const r = await rpc('zombie_start');
+    if(r && r.run_id){
+      if(net.chan && net.connected){ try{ net.chan.send({ type:'broadcast', event:'g', payload:{ zrun:r } }); }catch(e){} }
+      zBeginCoop(r);
+    }
+  }catch(e){ net.err = errAr(e); net.blockUntil = performance.now() + 4000; }
+  net.starting = false;
+}
+function zBeginCoop(r){
+  if(!r || !r.run_id || net.zrun === r.run_id) return;
+  net.zrun = r.run_id; net.mine = {}; net.states = {}; net.seen = {};
+  const off = Date.parse(r.server_now) - Date.now(), delay = (Date.parse(r.go_at) - (Date.now() + off)) / 1000;
+  runBanked = false; lastEarned = 0; earnNote = ''; recNote = '';
+  setRaceLen(r.length_m);
+  const seed = Number(r.seed);
+  pw = makeWorld(seed, true); pw.skin = acct.skin; pw.look = acct.projectile;
+  opps = [];
+  const mates = [];
+  (r.players || []).forEach(p => {
+    if(p.id === acct.id) return;
+    const t = zNewMate(p);
+    mates.push(t);
+    opps.push({ kind:'zmate', uid:p.id, name:t.name, ci:mates.length, w:{ scroll:0, dist:0, P:{ phase:0 }, dead:false }, dnf:false });
+  });
+  bricks = []; remoteBricks = [];
+  zBegin({ coop:true, seed, len:r.length_m, run:r.run_id, mates });
+  lastScore = lastCoins = lastE = lastAmmo = uiMe = uiCpu = -1; lastBoosting = null;
+  buildRaceBar(); updateHud();
+  endShown = false; newBest = false; goT = 0;
+  hideOverlay(); applyMode();
+  last = performance.now();
+  state = 'countdown'; cdT = Math.min(8, Math.max(0, delay));
 }
 
 /* ----- the race itself ----- */
@@ -2018,7 +2080,7 @@ function applyMode(){
   document.body.classList.toggle('vs', mode !== 'free');
   lastScore = -1; uiMe = uiCpu = -1;
   zApplyUi();
-  el.best.textContent = mode === 'zombie' ? zBest(raceM) : best;
+  el.best.textContent = zUi() ? zBest(raceM) : best;
   layout();
 }
 
@@ -2033,10 +2095,10 @@ function updateHud(){
   const e = Math.round(w.energy);
   if(e !== lastE){ lastE = e; el.efill.style.width = e + '%'; }
   if(w.boosting !== lastBoosting){ lastBoosting = w.boosting; el.ebar.classList.toggle('boost', w.boosting); }
-  const wc = pw.ammo, wsig = wc + ':' + acct.projectile + ':' + mode;
+  const wc = pw.ammo, wsig = wc + ':' + acct.projectile + ':' + zUi();
   if(wsig !== lastAmmo){
     lastAmmo = wsig;
-    const wn = mode === 'zombie' ? 'رصاص' : (LOOK_NAMES[acct.projectile] || 'طوبة');
+    const wn = zUi() ? 'رصاص' : (LOOK_NAMES[acct.projectile] || 'طوبة');
     $('wName').textContent = wn; $('kWName').textContent = wn;
     $('brickN').textContent = wc; $('kBrickN').textContent = wc;
   }
@@ -2163,8 +2225,8 @@ function paintLen(){
   el.ovOpts.querySelectorAll('[data-len]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.len === shown ? 'true' : 'false'));
 }
 function paintOpts(){
-  el.ovOpts.querySelectorAll('[data-mode],[data-level],[data-cpu]').forEach(b => {
-    const on = (b.dataset.mode && b.dataset.mode === mode) || (b.dataset.level && b.dataset.level === level) || (b.dataset.cpu && +b.dataset.cpu === cpuN);
+  el.ovOpts.querySelectorAll('[data-mode],[data-level],[data-cpu],[data-kind]').forEach(b => {
+    const on = (b.dataset.mode && b.dataset.mode === mode) || (b.dataset.level && b.dataset.level === level) || (b.dataset.cpu && +b.dataset.cpu === cpuN) || (b.dataset.kind && b.dataset.kind === (net.room ? (net.room.kind || 'race') : roomKind));
     b.setAttribute('aria-pressed', on ? 'true' : 'false');
   });
   paintLen();
@@ -2174,9 +2236,10 @@ function paintOpts(){
   $('plChips').hidden = mode !== 'online';
   paintPl();
   $('onlineBox').hidden = mode !== 'online';
-  $('zHow').hidden = mode !== 'zombie';
+  $('zHow').hidden = !(mode === 'zombie' || (mode === 'online' && (net.room ? net.room.kind === 'zombie' : roomKind === 'zombie')));
+  $('kindChips').hidden = !!net.room;
   $('dailyLine').hidden = mode === 'zombie';
-  const rh = el.text.querySelector('.runhow'); if(rh) rh.hidden = mode === 'zombie';
+  const rh = el.text.querySelector('.runhow'); if(rh) rh.hidden = mode === 'zombie' || mode === 'online';
   const rec = recOf(raceM);
   $('recLine').textContent = mode !== 'free' && rec ? 'أفضل وقت ليك في ' + raceM + ' م: ' + rec.toFixed(1) + ' ث' : '';
   $('dailyLine').innerHTML = dailyHtml();
@@ -2193,15 +2256,16 @@ el.ovOpts.addEventListener('click', async e => {
     newWorlds();
   }
   if(b.dataset.level){ level = b.dataset.level; save('stickrun:level', level); }
+  if(b.dataset.kind && !net.room){ roomKind = b.dataset.kind; save('stickrun:kind', roomKind); }
   if(b.dataset.cpu){ cpuN = +b.dataset.cpu; save('stickrun:cpus', cpuN); newWorlds(); }
   if(b.dataset.pl){                                 // the room's owner sets the size
     const v = +b.dataset.pl;
-    if(net.room){ if(iAmOwner()){ try{ net.room = await rpc('room_set', { p_len:net.room.length_m, p_max:v }); net.err = ''; }catch(err){ net.err = errAr(err); } } }
+    if(net.room){ if(iAmOwner()){ try{ net.room = await rpc(isZRoom() ? 'zroom_set' : 'room_set', { p_len:net.room.length_m, p_max:v }); net.err = ''; }catch(err){ net.err = errAr(err); } } }
     else{ roomMax = v; save('stickrun:pl', roomMax); }
   }
   if(b.dataset.len){                                // ... and the length
     const v = +b.dataset.len;
-    if(net.room){ if(iAmOwner()){ try{ net.room = await rpc('room_set', { p_len:v, p_max:net.room.max }); setRaceLen(v); net.err = ''; }catch(err){ net.err = errAr(err); } } }
+    if(net.room){ if(iAmOwner()){ try{ net.room = await rpc(isZRoom() ? 'zroom_set' : 'room_set', { p_len:v, p_max:net.room.max }); setRaceLen(v); net.err = ''; }catch(err){ net.err = errAr(err); } } }
     else{ setRaceLen(v); save('stickrun:len', raceM); }
   }
   paintOpts();
@@ -2248,6 +2312,7 @@ function exitToMenu(){
     pres({ qt:1 }); setTimeout(() => pres({ qt:null }), 1500);          // tells the others right away
     if(pw) rpc('race_report', { p_race:net.raceId, p_dist_m:pw.dist | 0, p_seen:seenMap() }).catch(() => {});
   }
+  if(zOn && zs && zs.coop && !zs.over){ pres({ qt:1 }); setTimeout(() => pres({ qt:null }), 1500); zNetEnd(); }
   if(state !== 'ready') bankRun();
   state = 'ready'; endShown = false; goT = 0;
   slideHeld = boostHeld = chargeHeld = grabHeld = false; syncPad();
@@ -2941,8 +3006,8 @@ function frame(now){
 }
 
 
-/* ---------- zombie mode: shoot your way to the end of the road ---------- */
-const ZW = 250, ZHP = 100, ZMAG = 12, ZRELOAD = 1.1, ZFIRE_CD = .2, ZBUL_V = 1150, ZBUL_LIFE = .6, ZMAX = 16, ZHIT_CD = 1, ZSAFE = 4;
+/* ---------- zombie mode: shoot your way to the end of the road (alone, or together in an online room) ---------- */
+const ZW = 250, ZHP = 100, ZMAG = 12, ZRELOAD = 1.1, ZFIRE_CD = .2, ZBUL_V = 1150, ZBUL_LIFE = .6, ZMAX = 16, ZHIT_CD = 1, ZSAFE = 4, ZREVIVE = 6;
 // walkers are slow, runners fast and fragile, tanks slow and tough
 const ZTYPES = [
   { sp:78,  hp:2, dmg:14, pts:10, w:13, h:62, col:'#5E9B4A' },
@@ -2950,6 +3015,7 @@ const ZTYPES = [
   { sp:54,  hp:7, dmg:30, pts:50, w:19, h:84, col:'#3F7A3A' }
 ];
 let zOn = false, zs = null, fireHeld = false, zUiOn = null;
+const zUi = () => mode === 'zombie' || zOn;
 const zBest = n => parseInt(load('stickrun:zbest:' + n, '0'), 10) || 0;
 const zRec = n => parseFloat(load('stickrun:zrec:' + n, '')) || 0;
 
@@ -2971,7 +3037,7 @@ function setPadText(btn, t){
   if(nodes.length) nodes[nodes.length - 1].textContent = '\n      ' + t + '\n    ';
 }
 function zApplyUi(){
-  const on = mode === 'zombie';
+  const on = zUi();
   document.body.classList.toggle('zm', on);
   if(on === zUiOn) return;
   zUiOn = on;
@@ -2981,12 +3047,19 @@ function zApplyUi(){
   lastAmmo = -1; lastE = -1; lastCoins = -1;
 }
 
-function zBegin(){
-  const seed = (Math.random() * 4294967296) >>> 0, fin = raceM * 50;
-  zs = { fin, t:0, plats:zPlatforms(seed, fin), taken:new Set(), zombies:[], bullets:[], nextId:1, bid:0, spawnT:ZSAFE, rng:mulberry32(seed ^ 0xC0FFEE),
-         over:false, won:false,
-         me:{ wx:0, h:0, vy:0, on:true, jumps:2, face:1, hp:ZHP, inv:ZSAFE - 1, ammo:ZMAG, reload:0, cd:0, kills:0, down:false, dropT:0, phase:0, flash:0, aimA:0, fin:false } };
+function zNewMate(p){
+  return { id:p.id, name:String(p.name || 'لاعب').slice(0, 10), skin:SKIN_BY_ID[p.skin] ? p.skin : 'base', wx:0, h:0, on:true, face:1, hp:ZHP, down:false, fin:false, kills:0,
+           aim:0, flash:0, inv:0, phase:0, bu:[], buT:0, gone:false, sn:null, t0:performance.now() };
+}
+function zBegin(o){
+  o = o || {};
+  const seed = o.seed !== undefined ? o.seed >>> 0 : (Math.random() * 4294967296) >>> 0, fin = (o.len || raceM) * 50;
+  zs = { fin, t:0, coop:!!o.coop, run:o.run || null, myId:(o.coop && acct.id) ? acct.id : 'me', plats:zPlatforms(seed, fin), taken:new Set(), zombies:[], bullets:[], nextId:1, bid:0,
+         spawnT:ZSAFE, rng:mulberry32((Math.random() * 4294967296) >>> 0), over:false, won:false, ended:false, counted:new Set(), recentKills:[], lastSend:0, lastSnap:0,
+         mates:o.mates || [],
+         me:{ wx:0, h:0, vy:0, on:true, jumps:2, face:1, hp:ZHP, inv:ZSAFE - 1, ammo:ZMAG, reload:0, cd:0, kills:0, down:false, downT:0, dropT:0, phase:0, flash:0, aimA:0, fin:false } };
   zOn = true;
+  zApplyUi();
   Object.assign(pw, { scroll:0, dist:0, coinCount:0, energy:100, ammo:ZMAG, score:0, pop:null });
 }
 function zJump(){
@@ -2997,6 +3070,87 @@ function zJump(){
   beep(first ? 420 : 520, first ? 640 : 820, .09, 'square', .04);
 }
 
+/* --- the team (online) --- */
+function zPlayers(){
+  const z = zs, m = z.me;
+  return [{ id:z.myId, wx:m.wx, h:m.h, down:m.down, fin:m.fin }].concat(z.mates.filter(t => !t.gone).map(t => ({ id:t.id, wx:t.wx, h:t.h, down:t.down, fin:t.fin })));
+}
+// the player with the smallest id who is still sending runs the zombies; if they drop out, the next one takes over from the last snapshot
+function zIsHost(){
+  const z = zs;
+  if(!z.coop) return true;
+  const now = performance.now();
+  let min = z.myId;
+  for(const t of z.mates) if(!t.gone && t.id < min && net.seen[t.id] && now - net.seen[t.id] < 3000) min = t.id;
+  return min === z.myId;
+}
+function zMates(h){
+  const z = zs, now = performance.now();
+  for(const t of z.mates){
+    const sn = net.states[t.id];
+    if(sn && sn !== t.sn){
+      if(t.tx === undefined){ t.wx = sn.s; t.h = sn.h; }
+      t.sn = sn; t.buT = now; t.tx = sn.s; t.th = sn.h; t.on = sn.on === 1; t.face = sn.fc || 1; t.hp = sn.hp; t.down = sn.dn === 1; t.fin = sn.fn === 1;
+      t.kills = sn.k | 0; t.aim = sn.aa || 0; if(sn.fl === 1) t.flash = .08; t.inv = sn.iv === 1 ? 1 : 0; t.bu = Array.isArray(sn.bu) ? sn.bu : [];
+      t.gone = sn.qt === 1;
+    }
+    if(t.tx !== undefined){
+      const px = t.wx;
+      t.wx += (t.tx - t.wx) * Math.min(1, h * 12); t.h += (t.th - t.h) * Math.min(1, h * 18);
+      t.phase += Math.abs(t.wx - px) * .035;
+    }
+    if(t.flash > 0) t.flash -= h;
+    const seen = net.seen[t.id];
+    if(!t.down && !t.fin && ((seen && now - seen > 6000) || (!seen && now - t.t0 > 10000))) t.gone = true;     // went quiet while still running
+  }
+  zs.mates.forEach((t, i) => { const o = opps[i]; if(o && o.kind === 'zmate'){ o.w.scroll = t.wx; o.w.dist = Math.floor(t.wx / 50); o.dnf = t.gone; } });
+}
+function zSendPresence(){
+  const z = zs, m = z.me, now = performance.now();
+  if(!z.coop || now - z.lastSend < 80) return;
+  z.lastSend = now;
+  Object.assign(net.mine, { s:Math.round(m.wx * 10) / 10, h:Math.round(m.h), on:m.on ? 1 : 0, fc:m.face, hp:Math.round(m.hp), dn:m.down ? 1 : 0, fn:m.fin ? 1 : 0, k:m.kills,
+    aa:Math.round(m.aimA * 100) / 100, fl:m.flash > 0 ? 1 : 0, iv:m.inv > 0 ? 1 : 0, bu:z.bullets.map(b => [Math.round(b.x), Math.round(b.h), Math.round(b.vx), Math.round(b.vy)]), sk:acct.skin });
+  pushState();
+}
+function zSendSnap(){
+  const z = zs, now = performance.now();
+  if(!z.coop || !net.chan || !net.connected || now - z.lastSnap < 100) return;
+  z.lastSnap = now;
+  z.recentKills = z.recentKills.filter(k => z.t - k[3] < 4);
+  try{ net.chan.send({ type:'broadcast', event:'z', payload:{ u:z.myId, z:z.zombies.map(e => [e.id, e.ty, Math.round(e.x), e.hp, e.dir, e.mv ? 1 : 0]), ks:z.recentKills.map(k => [k[0], k[1], k[2]]) } }); }catch(e){}
+}
+function zOnSnap(p){
+  const z = zs;
+  if(!zOn || !z || !z.coop || !p || zIsHost()) return;
+  const keep = new Map(z.zombies.map(e => [e.id, e])), out = [], now = performance.now();
+  for(const a of (p.z || [])){
+    const id = a[0];
+    let e = keep.get(id);
+    if(!e) e = { id, ty:a[1], x:a[2], hp:a[3], dir:a[4], spd:1, flash:0, phase:Math.random() * 6 };
+    e.hp = a[3]; e.dir = a[4]; e.mv = a[5]; e.xs = a[2]; e.sT = now;
+    out.push(e);
+    if(z.nextId <= id) z.nextId = id + 1;
+  }
+  z.zombies = out;
+  for(const k of (p.ks || [])) if(k[1] === z.myId && !z.counted.has(k[0])){ z.counted.add(k[0]); zKill(k[2]); }
+}
+function zOnHit(p){
+  const z = zs;
+  if(!zOn || !z || !z.coop || !p || !zIsHost()) return;
+  const e = z.zombies.find(x => x.id === p.z);
+  if(!e || e.hp <= 0) return;
+  e.hp -= Math.max(1, p.d | 0); e.flash = .12;
+  if(e.hp <= 0) z.recentKills.push([e.id, p.u, e.ty, z.t]);
+}
+function zNetEnd(){
+  const z = zs;
+  if(!z || !z.coop || !z.run || z.ended) return;
+  z.ended = true;
+  rpc('zombie_end', { p_run:z.run }).catch(() => {});
+}
+
+/* --- shooting --- */
 function zFire(){
   const z = zs, m = z.me;
   if(m.down || m.fin || z.over || m.cd > 0 || m.reload > 0 || state !== 'playing') return;
@@ -3017,36 +3171,81 @@ function zFire(){
   z.bullets.push({ id:++z.bid, x:m.wx + dx * 20, h:m.h + 38 + dy * 20, vx:dx * ZBUL_V, vy:dy * ZBUL_V, t:ZBUL_LIFE });
   beep(720, 240, .07, 'square', .04);
 }
+function zKill(ty){
+  zs.me.kills++;
+  popup(pw, '+' + ZTYPES[ty].pts);
+  beep(300, 620, .1, 'triangle', .05);
+}
+// my bullet touched a zombie: the host owns the zombies, so when it isn't me I tell it
+function zHitZombie(e){
+  const z = zs;
+  e.hp--; e.flash = .12;
+  if(zIsHost()){
+    if(e.hp <= 0){ z.counted.add(e.id); zKill(e.ty); z.recentKills.push([e.id, z.myId, e.ty, z.t]); }
+    else beep(190, 100, .06, 'sawtooth', .035);
+  }else{
+    if(net.chan && net.connected){ try{ net.chan.send({ type:'broadcast', event:'zh', payload:{ u:z.myId, z:e.id, d:1 } }); }catch(err){} }
+    if(e.hp > 0) beep(190, 100, .06, 'sawtooth', .035);
+  }
+}
 
 function zHurt(d, fromX){
   const m = zs.me;
   m.hp -= d; m.inv = ZHIT_CD; pw.shake = reduceMotion ? 0 : .5;
   m.wx = Math.max(0, m.wx + (m.wx >= fromX ? 1 : -1) * 35);
   beep(170, 70, .2, 'sawtooth', .06);
-  if(m.hp <= 0){ m.hp = 0; m.down = true; m.vy = 300; }
+  if(m.hp <= 0){ m.hp = 0; m.down = true; m.vy = 300; m.downT = ZREVIVE; }
 }
 
-function zSpawn(m){
-  const z = zs, r = z.rng, prog = Math.min(1, m.wx / z.fin);
-  z.spawnT = Math.max(.7, 1.9 - prog * 1.2);
-  const rearOk = m.wx > 500, n = r() < .25 ? 2 : 1;
-  for(let i = 0; i < n; i++){
+/* --- the zombies (run by the host) --- */
+function zSpawn(act, n){
+  const z = zs, r = z.rng;
+  const lead = Math.max(...act.map(p => p.wx)), tail = Math.min(...act.map(p => p.wx)), prog = Math.min(1, lead / z.fin);
+  z.spawnT = Math.max(.7, 1.9 - prog * 1.2) / (1 + .45 * (n - 1));
+  const rearOk = tail > 500, k = r() < .25 ? 2 : 1;
+  for(let i = 0; i < k; i++){
     const front = !rearOk || r() < .55;
     const ty = r() < .06 + .12 * prog ? 2 : (r() < .3 + .25 * prog ? 1 : 0);
-    const x = front ? Math.min(z.fin + 200, m.wx + W / 2 + 70 + r() * 260) : m.wx - W / 2 - 70 - r() * 260;
-    z.zombies.push({ id:z.nextId++, ty, x, hp:ZTYPES[ty].hp, dir:front ? -1 : 1, spd:.9 + r() * .25, flash:0, phase:r() * 6 });
+    const x = front ? Math.min(z.fin + 200, lead + W / 2 + 70 + r() * 260) : tail - W / 2 - 70 - r() * 260;
+    z.zombies.push({ id:z.nextId++, ty, x, hp:ZTYPES[ty].hp, dir:front ? -1 : 1, spd:.9 + r() * .25, flash:0, phase:r() * 6, mv:1 });
   }
 }
-
-function zKill(e){
-  zs.me.kills++;
-  popup(pw, '+' + ZTYPES[e.ty].pts);
-  beep(300, 620, .1, 'triangle', .05);
+function zSim(h, players){
+  const z = zs, act = players.filter(p => !p.down && !p.fin);
+  z.spawnT -= h;
+  if(z.spawnT <= 0 && z.zombies.length < ZMAX + 5 * (players.length - 1) && act.length) zSpawn(act, players.length);
+  for(const e of z.zombies){
+    if(e.flash > 0) e.flash -= h;
+    const Ty = ZTYPES[e.ty];
+    let tgt = null, bd = 1e9;
+    for(const p of act){ const d = Math.abs(p.wx - e.x); if(d < bd){ bd = d; tgt = p; } }
+    e.mv = 0;
+    if(!tgt) continue;
+    const dx = tgt.wx - e.x;
+    e.dir = dx >= 0 ? 1 : -1;
+    if(Math.abs(dx) > 10 && !(tgt.h > 70 && Math.abs(dx) < 16)){ e.x += e.dir * Ty.sp * e.spd * h; e.phase += h * Ty.sp * .05; e.mv = 1; }   // under a platform they just stand there
+  }
+  z.zombies = z.zombies.filter(e => e.hp > 0 && (!act.length || act.some(p => Math.abs(p.wx - e.x) < 1500)));
+}
+// everybody else just follows the host's snapshots
+function zFollow(h){
+  const z = zs, now = performance.now();
+  for(const e of z.zombies){
+    const Ty = ZTYPES[e.ty];
+    if(e.flash > 0) e.flash -= h;
+    if(e.xs !== undefined){
+      const age = Math.min(.25, (now - e.sT) / 1000);
+      e.x += (e.xs + e.dir * (e.mv ? 1 : 0) * Ty.sp * age - e.x) * Math.min(1, h * 14);
+    }
+    if(e.mv) e.phase += h * Ty.sp * .05;
+  }
+  z.zombies = z.zombies.filter(e => e.hp > 0);
 }
 
 function zTick(h){
   const z = zs, m = z.me;
   z.t += h;
+  if(z.coop) zMates(h);
   if(pw.pop){ pw.pop.life -= h * 1.1; if(pw.pop.life <= 0) pw.pop = null; }
   if(pw.shake > 0) pw.shake = Math.max(0, pw.shake - h * 3);
   if(m.flash > 0) m.flash -= h;
@@ -3083,37 +3282,33 @@ function zTick(h){
     if(m.wx >= z.fin){ m.fin = true; m.wx = z.fin; }
   }else if(m.down){
     m.vy -= GRAV * h; m.h = Math.max(0, m.h + m.vy * h); if(m.h === 0) m.vy = 0;
+    if(z.coop && !z.over){                              // a teammate who is still standing brings you back
+      m.downT -= h;
+      if(m.downT <= 0){
+        const buddy = z.mates.filter(t => !t.gone && !t.down && !t.fin)[0];
+        if(buddy){ Object.assign(m, { down:false, hp:50, wx:Math.max(0, buddy.wx - 40), h:0, vy:0, on:true, jumps:2, inv:2.5 }); popup(pw, 'رجعت!'); }
+      }
+    }
   }
-  // zombies: they walk towards you along the ground
-  z.spawnT -= h;
-  if(z.spawnT <= 0 && z.zombies.length < ZMAX && !m.down && !m.fin) zSpawn(m);
-  const target = (!m.down && !m.fin) ? m : null;
-  for(const e of z.zombies){
-    if(e.flash > 0) e.flash -= h;
-    const Ty = ZTYPES[e.ty];
-    if(!target) continue;
-    const dx = target.wx - e.x;
-    e.dir = dx >= 0 ? 1 : -1;
-    if(Math.abs(dx) > 10 && !(target.h > 70 && Math.abs(dx) < 16)){ e.x += e.dir * Ty.sp * e.spd * h; e.phase += h * Ty.sp * .05; }   // under a platform they just stand there
-  }
+  // zombies
+  const host = zIsHost();
+  if(host) zSim(h, zPlayers()); else zFollow(h);
   // bullets
   for(const b of z.bullets){
     b.x += b.vx * h; b.h += b.vy * h; b.t -= h;
     if(b.h < 0) b.t = 0;
     for(const e of z.zombies){
       const Ty = ZTYPES[e.ty];
-      if(e.hp > 0 && Math.abs(b.x - e.x) < Ty.w + 5 && b.h > -4 && b.h < Ty.h + 4){
-        e.hp--; e.flash = .12; b.t = 0;
-        if(e.hp <= 0) zKill(e); else beep(190, 100, .06, 'sawtooth', .035);
-        break;
-      }
+      if(e.hp > 0 && Math.abs(b.x - e.x) < Ty.w + 5 && b.h > -4 && b.h < Ty.h + 4){ b.t = 0; zHitZombie(e); break; }
     }
   }
   z.bullets = z.bullets.filter(b => b.t > 0);
-  z.zombies = z.zombies.filter(e => e.hp > 0 && Math.abs(e.x - m.wx) < 1500);
+  z.zombies = z.zombies.filter(e => e.hp > 0);
+  if(z.coop){ zSendPresence(); if(host) zSendSnap(); }
   // the hud numbers
   Object.assign(pw, { scroll:m.wx, dist:Math.floor(m.wx / 50), coinCount:m.kills, energy:m.hp, ammo:m.reload > 0 ? 0 : m.ammo });
-  if(!z.over && (m.down || m.fin)) zOver(m.fin);
+  // the run is over once nobody is left running: everyone has made it or is down for good
+  if(!z.over && !zPlayers().some(p => !p.down && !p.fin)) zOver(m.fin);
 }
 
 function zScore(){ const m = zs.me; return m.kills * 10 + Math.floor(m.wx / 50) + (m.fin ? 200 : 0); }
@@ -3121,7 +3316,7 @@ function zOver(escaped){
   const z = zs, m = z.me;
   if(z.over) return;
   z.over = true; z.won = escaped;
-  state = escaped ? 'finished' : 'dead'; endShown = false;
+  state = (escaped || z.coop) ? 'finished' : 'dead'; endShown = false;
   z.score = zScore();
   z.newBest = z.score > zBest(raceM);
   if(z.newBest) save('stickrun:zbest:' + raceM, z.score);
@@ -3130,6 +3325,7 @@ function zOver(escaped){
   if(z.newRec) save('stickrun:zrec:' + raceM, z.t.toFixed(2));
   z.prevRec = prev;
   el.best.textContent = zBest(raceM);
+  if(z.coop){ z.lastSend = 0; zSendPresence(); zNetEnd(); }
   beep(escaped ? 660 : 200, escaped ? 1320 : 60, .4, escaped ? 'triangle' : 'sawtooth', .06);
   setTimeout(() => { if(state === 'finished' || state === 'dead') showZEnd(); }, 900);
 }
@@ -3139,7 +3335,12 @@ function showZEnd(){
   let html = 'قتلى: <strong>' + z.me.kills + '</strong> — مسافة: <strong>' + Math.floor(z.me.wx / 50) + ' م</strong> من ' + raceM + '<br>النقاط: <strong>' + z.score + '</strong> — أعلى نقاط ليك في ' + raceM + ' م: <strong>' + zBest(raceM) + '</strong>';
   if(z.newBest) html += '<br>رقم قياسي جديد في النقاط!';
   if(z.won) html += '<br>وصلت في ' + z.t.toFixed(1) + ' ث' + (z.newRec ? ' — أسرع وقت ليك!' : (z.prevRec ? ' — أفضل وقت ' + z.prevRec.toFixed(1) + ' ث' : ''));
-  showOverlay(z.won ? 'نجوت!' : 'الزومبي مسكوك', html, 'العب تاني', true);
+  if(z.coop){
+    const st = t => t.fin ? 'وصل' : (t.down ? 'وقع' : (t.gone ? 'خرج' : 'لسه بيجري'));
+    html += '<br>' + ['<strong>أنت</strong> — ' + z.me.kills + ' قتيل — ' + (z.me.fin ? 'وصلت' : 'وقعت')].concat(z.mates.map(t => esc(t.name) + ' — ' + t.kills + ' قتيل — ' + st(t))).join('<br>');
+  }
+  const done = z.me.fin;
+  showOverlay(z.coop ? (done ? 'وصلت مع الفريق!' : 'الفريق وقع') : (z.won ? 'نجوت!' : 'الزومبي مسكوك'), html, z.coop ? 'جولة تانية' : 'العب تاني', true);
 }
 
 /* --- drawing --- */
@@ -3188,8 +3389,24 @@ function drawZombie(e, sx){
   }
 }
 
+// a player (me or a teammate), facing the way they're going, with the gun
+function zRunner(info, sx, alpha){
+  const P = { h:info.h, on:info.on, sliding:false, phase:info.phase, rot:0, lying:info.down, fwd:false, sleep:false };
+  const fig = { P, dead:info.down, invuln:info.inv, kickT:0, slowT:0, grabbing:false, skin:info.skin, elapsed:99, remote:true };
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.translate(sx, 0); ctx.scale(info.face, 1); ctx.translate(-PX, 0);
+  drawFigure(fig, skinOf(fig).band || C.pencil);
+  if(!info.down){
+    ctx.translate(PX + 4, ground - info.h - 44); ctx.rotate(-info.aim);
+    ctx.fillStyle = C.ink; ctx.fillRect(0, -3, 24, 6); ctx.fillRect(2, 3, 6, 9);
+    if(info.flash > 0){ ctx.fillStyle = C.marker; ctx.beginPath(); ctx.moveTo(26, 0); ctx.lineTo(38, -6); ctx.lineTo(34, 0); ctx.lineTo(38, 6); ctx.closePath(); ctx.fill(); }
+  }
+  ctx.restore();
+}
+
 function drawZombieScene(){
-  const z = zs, m = z.me, cam = m.wx, X = x => W / 2 + (x - cam);
+  const z = zs, m = z.me, cam = m.wx, X = x => W / 2 + (x - cam), now = performance.now();
   drawBackground({ scroll:cam });
   drawFinish({ scroll:cam - (W / 2 - PX) });
   z.plats.forEach((p, i) => drawZPlat(p, i, X(p.x)));
@@ -3202,23 +3419,25 @@ function drawZombieScene(){
   }
   ctx.save();
   ctx.strokeStyle = C.marker; ctx.lineWidth = 3; ctx.lineCap = 'round';
-  for(const b of z.bullets){
-    const sx = X(b.x), y = ground - b.h, L = Math.hypot(b.vx, b.vy) || 1;
-    ctx.beginPath(); ctx.moveTo(sx, y); ctx.lineTo(sx - b.vx / L * 16, y + b.vy / L * 16); ctx.stroke();
-  }
+  const line = (x, h, vx, vy) => { const sx = X(x), y = ground - h, L = Math.hypot(vx, vy) || 1; ctx.beginPath(); ctx.moveTo(sx, y); ctx.lineTo(sx - vx / L * 16, y + vy / L * 16); ctx.stroke(); };
+  for(const b of z.bullets) line(b.x, b.h, b.vx, b.vy);
+  for(const t of z.mates){ const age = Math.min(.3, (now - t.buT) / 1000); for(const b of t.bu) line(b[0] + b[2] * age, b[1] + b[3] * age, b[2], b[3]); }
   ctx.restore();
-  // the runner, facing the way you're going
-  const P = { h:m.h, on:m.on, sliding:false, phase:m.phase, rot:0, lying:m.down, fwd:false, sleep:false };
-  const fig = { P, dead:m.down, invuln:m.inv, kickT:0, slowT:0, grabbing:false, skin:pw.skin, elapsed:99, remote:true };
-  ctx.save();
-  ctx.translate(W / 2, 0); ctx.scale(m.face, 1); ctx.translate(-PX, 0);
-  drawFigure(fig, skinOf(fig).band || C.pencil);
-  if(!m.down){                                         // the gun
-    ctx.translate(PX + 4, ground - m.h - 44); ctx.rotate(-m.aimA);
-    ctx.fillStyle = C.ink; ctx.fillRect(0, -3, 24, 6); ctx.fillRect(2, 3, 6, 9);
-    if(m.flash > 0){ ctx.fillStyle = C.marker; ctx.beginPath(); ctx.moveTo(26, 0); ctx.lineTo(38, -6); ctx.lineTo(34, 0); ctx.lineTo(38, 6); ctx.closePath(); ctx.fill(); }
-  }
-  ctx.restore();
+  // teammates (a little see-through), then me
+  z.mates.forEach((t, i) => {
+    if(t.gone || t.tx === undefined) return;
+    const sx = X(t.wx);
+    if(sx < -60 || sx > W + 60) return;
+    zRunner({ h:t.h, on:t.on, phase:t.phase, down:t.down, inv:t.inv, skin:t.skin, face:t.face, aim:t.aim, flash:t.flash }, sx, .75);
+    ctx.save();
+    ctx.font = '700 14px "Cairo", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = C.ink; ctx.globalAlpha = .9;
+    ctx.fillText(t.name, sx, Math.max(16, ground - t.h - 96));
+    ctx.fillStyle = C.paper; ctx.fillRect(sx - 18, ground - t.h - 90, 36, 5);
+    ctx.fillStyle = C.bands[(i + 1) % 6]; ctx.fillRect(sx - 18, ground - t.h - 90, 36 * Math.max(0, t.hp) / ZHP, 5);
+    ctx.strokeStyle = C.ink; ctx.lineWidth = 1.5; ctx.strokeRect(sx - 18, ground - t.h - 90, 36, 5);
+    ctx.restore();
+  });
+  zRunner({ h:m.h, on:m.on, phase:m.phase, down:m.down, inv:m.inv, skin:pw.skin, face:m.face, aim:m.aimA, flash:m.flash }, W / 2, 1);
   ctx.save();
   ctx.translate(W / 2 - PX, 0); drawPop({ dead:m.down, P:{ h:m.h }, combo:0, pop:pw.pop });
   ctx.restore();
@@ -3234,10 +3453,13 @@ function drawZombieScene(){
     ctx.fillStyle = C.ink; ctx.fillText(String(n), ex - d * 2, ey - 20);
   }
   ctx.restore();
-  if(m.reload > 0){
-    ctx.save(); ctx.font = '700 15px "Cairo", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = C.ink;
-    ctx.fillText('تعبئة...', W / 2, ground - m.h - 100); ctx.restore();
-  }
+  ctx.save(); ctx.font = '700 16px "Cairo", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = C.ink; ctx.lineJoin = 'round'; ctx.lineWidth = 4; ctx.strokeStyle = C.paper;
+  if(m.reload > 0) ctx.fillText('تعبئة...', W / 2, ground - m.h - 100);
+  let note = '';
+  if(z.coop && m.fin && !z.over) note = 'وصلت! استنى زمايلك يوصلوا';
+  else if(z.coop && m.down && !z.over) note = 'وقعت... زميلك هيرجّعك بعد ' + Math.max(0, Math.ceil(m.downT)) + ' ث';
+  if(note){ ctx.strokeText(note, W / 2, HT * .25); ctx.fillText(note, W / 2, HT * .25); }
+  ctx.restore();
 }
 
 
@@ -3270,9 +3492,9 @@ setInterval(checkUpdate, 45000);
 
 /* ---------- "online now" for the owner's dashboard: a small heartbeat while the page is open and visible ---------- */
 function myActivity(){
+  if(zOn && (state === 'countdown' || state === 'playing' || state === 'paused')) return 'زومبي';
   if(state === 'countdown' || state === 'playing' || state === 'paused' || (state === 'finished' && mode === 'online' && !net.resolved))
     return mode === 'online' ? 'سباق أونلاين' : (mode === 'race' ? 'ضد الكمبيوتر' : 'جري حر');
-  if(zOn && (state === 'countdown' || state === 'playing' || state === 'paused')) return 'زومبي';
   if(!storeEl.hidden) return 'المتجر';
   if(mode === 'online' && net.room) return 'غرفة أونلاين';
   return 'في القايمة';
