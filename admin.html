@@ -31,6 +31,8 @@
   nav{display:flex;gap:6px;padding:8px 14px;overflow-x:auto;background:var(--bg);border-bottom:1px solid var(--line);scrollbar-width:thin}
   nav button{flex:none;border-radius:999px;border-color:var(--line)}
   nav button[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+  .badge.on{background:var(--good)}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--good);margin-inline-end:6px}
   .badge{display:inline-block;min-width:20px;padding:0 6px;margin-inline-start:6px;border-radius:10px;background:var(--bad);color:#fff;font-size:12px;text-align:center}
   main{padding:10px 14px 60px;max-width:1100px;margin:0 auto}
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
@@ -188,13 +190,13 @@ function beep(){
 }
 
 /* ---------- tabs ---------- */
-const TABS = [['overview', 'نظرة عامة'], ['players', 'اللاعبين'], ['alerts', 'التنبيهات'], ['names', 'الأسماء'], ['support', 'الدعم'], ['races', 'السباقات'], ['bans', 'الحظر'], ['settings', 'الإعدادات']];
-let tab = 'overview', counts = {}, showSeq = 0;
+const TABS = [['overview', 'نظرة عامة'], ['online', 'أونلاين الآن'], ['players', 'اللاعبين'], ['alerts', 'التنبيهات'], ['names', 'الأسماء'], ['support', 'الدعم'], ['races', 'السباقات'], ['bans', 'الحظر'], ['settings', 'الإعدادات']];
+let tab = 'overview', counts = {}, showSeq = 0, onlineTimer = null;
 function buildTabs(){
   const nav = $('tabs'); nav.textContent = '';
   for(const [id, label] of TABS){
-    const n = id === 'alerts' ? counts.open_alerts : id === 'names' ? counts.pending_names : id === 'support' ? counts.unread_support : 0;
-    nav.append(h('button', { 'aria-pressed':id === tab ? 'true' : 'false', onclick:() => show(id) }, label, n ? h('span', { class:'badge' }, n) : null));
+    const n = id === 'online' ? counts.online_5m : id === 'alerts' ? counts.open_alerts : id === 'names' ? counts.pending_names : id === 'support' ? counts.unread_support : 0;
+    nav.append(h('button', { 'aria-pressed':id === tab ? 'true' : 'false', onclick:() => show(id) }, label, n ? h('span', { class:'badge' + (id === 'online' ? ' on' : '') }, n) : null));
   }
   const on = nav.querySelector('[aria-pressed=true]'); if(on && on.scrollIntoView) on.scrollIntoView({ block:'nearest', inline:'nearest' });
 }
@@ -209,7 +211,7 @@ async function refreshBadges(){
   }catch(e){}
 }
 async function show(id){
-  tab = id; buildTabs();
+  tab = id; buildTabs(); clearInterval(onlineTimer);
   const seq = ++showSeq, main = $('main');
   main.textContent = '';
   const ld = h('div', { class:'loading' }, 'جاري التحميل...'); main.append(ld);
@@ -234,7 +236,7 @@ const empty = t => h('div', { class:'empty' }, t);
 /* ---------- overview ---------- */
 async function renderOverview(box){
   const o = await rpc('admin_overview'); counts = o;
-  const stats = [['اللاعبين', o.players, 'players'], ['أونلاين (5 د)', o.online_5m, 'players'], ['جداد 24 ساعة', o.new_24h, 'players'], ['عملات في المحافظ', o.coins_in_wallets, null], ['سباقات 24 ساعة', o.races_24h, 'races'],
+  const stats = [['اللاعبين', o.players, 'players'], ['أونلاين دلوقتي', o.online_5m, 'online'], ['جداد 24 ساعة', o.new_24h, 'players'], ['عملات في المحافظ', o.coins_in_wallets, null], ['سباقات 24 ساعة', o.races_24h, 'races'],
     ['تنبيهات مفتوحة', o.open_alerts, 'alerts', o.open_alerts > 0], ['أسماء مستنية', o.pending_names, 'names', o.pending_names > 0], ['رسايل دعم جديدة', o.unread_support, 'support', o.unread_support > 0], ['حظر شغال', o.active_bans, 'bans']];
   box.append(h('div', { class:'grid' }, stats.map(([l, v, to, hot]) => h(to ? 'button' : 'div', { class:'stat' + (hot ? ' hot' : ''), type:to ? 'button' : false, onclick:to ? () => show(to) : false }, h('b', null, v ?? 0), h('span', null, l)))));
   const alerts = await tbl(sb.from('alerts').select('*').in('status', ['open', 'reviewing']).order('id', { ascending:false }).limit(5));
@@ -242,6 +244,28 @@ async function renderOverview(box){
   box.append(h('h2', null, 'آخر التنبيهات المفتوحة'));
   if(!alerts.length) box.append(empty('مفيش تنبيهات. كله هادي.'));
   for(const a of alerts) box.append(h('div', { class:'card ' + (a.severity === 'high' ? 'high' : '') }, h('b', null, ALERT_NAMES[a.kind] || a.kind), ' — ', nm(a.user_id), ' · ', fmt(a.created_at)));
+}
+
+/* ---------- online now ---------- */
+async function renderOnline(box){
+  const list = h('div'), count = h('b', null, '…');
+  async function paint(){
+    const rows = await rpc('admin_online', { p_secs:120 });
+    count.textContent = rows.length;
+    list.textContent = '';
+    if(!rows.length) list.append(empty('مفيش حد أونلاين دلوقتي.'));
+    for(const p of rows){
+      const ago = Math.max(0, Math.round((Date.now() - Date.parse(p.last_seen)) / 1000));
+      list.append(h('div', { class:'card' + (p.banned ? ' high' : (p.flagged ? ' warn' : '')) },
+        h('div', { class:'row' }, h('span', { class:'dot' }), h('b', { class:'grow' }, p.name), h('span', { class:'tag good' }, p.activity || 'في القايمة'), h('span', null, p.coins + ' عملة'),
+          p.banned ? h('span', { class:'tag bad' }, 'محظور') : null, p.flagged && !p.banned ? h('span', { class:'tag warn' }, 'مشبوه') : null),
+        h('div', { class:'muted' }, [p.email, [p.country, p.device].filter(Boolean).join(' · '), 'آخر نبضة من ' + ago + ' ث'].filter(Boolean).join(' · ')),
+        h('div', { class:'row' }, h('button', { onclick:() => openChat(p.id, p.name) }, 'رسايل'), h('button', { onclick:() => { playerQ = p.name; show('players'); } }, 'افتح اللاعب'))));
+    }
+  }
+  box.append(h('div', { class:'row', style:'margin:0 0 6px' }, h('span', null, 'أونلاين دلوقتي: ', count), h('span', { class:'muted grow' }, 'بيتحدّث لوحده كل 8 ثواني. بيظهر المسجلين اللي فاتحين اللعبة بس (الضيوف مش بيتحسبوا).')), list);
+  await paint();
+  onlineTimer = setInterval(() => { if(tab !== 'online' || !list.isConnected){ clearInterval(onlineTimer); return; } paint().catch(() => {}); }, 8000);
 }
 
 /* ---------- players ---------- */
@@ -440,7 +464,7 @@ async function renderSettings(box){
   }
 }
 
-const RENDER = { overview:renderOverview, players:renderPlayers, alerts:renderAlerts, names:renderNames, support:renderSupport, races:renderRaces, bans:renderBans, settings:renderSettings };
+const RENDER = { overview:renderOverview, online:renderOnline, players:renderPlayers, alerts:renderAlerts, names:renderNames, support:renderSupport, races:renderRaces, bans:renderBans, settings:renderSettings };
 boot();
 })();
 </script>

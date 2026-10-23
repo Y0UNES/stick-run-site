@@ -1607,7 +1607,7 @@ async function afterLogin(){
     applyState(st);
     if(!st.consent){ showAuth('وافق على الإشعار عشان تكمّل', true); return; }
     try{ const r = await sb.functions.invoke('gate'); if(r && r.data && r.data.ban){ acct.ban = r.data.ban; } }catch(e){}   // network + ban check
-    await loadCatalog(); await loadNetCfg(); refreshEvent();
+    await loadCatalog(); await loadNetCfg(); refreshEvent(); pingNow();
     hideAuth(); paintAcct();
     if(acct.ban) showBanned();
   }catch(e){ showAuth(errAr(e)); }
@@ -2945,6 +2945,18 @@ async function checkUpdate(){
 }
 checkUpdate();
 setInterval(checkUpdate, 45000);
+
+/* ---------- "online now" for the owner's dashboard: a small heartbeat while the page is open and visible ---------- */
+function myActivity(){
+  if(state === 'countdown' || state === 'playing' || state === 'paused' || (state === 'finished' && mode === 'online' && !net.resolved))
+    return mode === 'online' ? 'سباق أونلاين' : (mode === 'race' ? 'ضد الكمبيوتر' : 'جري حر');
+  if(!storeEl.hidden) return 'المتجر';
+  if(mode === 'online' && net.room) return 'غرفة أونلاين';
+  return 'في القايمة';
+}
+async function pingNow(){ if(sb && acct.signedIn && !document.hidden){ try{ await sb.rpc('ping', { p_activity:myActivity() }); }catch(e){} } }
+setInterval(pingNow, 45000);
+document.addEventListener('visibilitychange', () => { if(!document.hidden) pingNow(); });
 document.addEventListener('visibilitychange', () => { if(!document.hidden) checkUpdate(); });
 
 newWorlds();
