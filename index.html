@@ -385,6 +385,7 @@ body.vs .keys .k-atk{display:inline}
               <button class="chip" id="myNameShow" type="button" title="غيّر الاسم من المتجر">...</button>
               <input class="rinput" id="roomCode" maxlength="16" placeholder="كود الغرفة" autocomplete="off" autocapitalize="none" spellcheck="false" aria-label="كود الغرفة">
               <button class="chip" id="roomGo" type="button">ادخل</button>
+              <button class="chip" id="roomNew" type="button">غرفة جديدة</button>
               <button class="chip" id="roomPriv" type="button" aria-pressed="false" title="الغرفة الخاصة مبتظهرش في القايمة">خاصة</button>
             </div>
             <div class="ostatus" id="roomStatus"></div>
@@ -1140,22 +1141,32 @@ function pushState(){
 function pres(o){ Object.assign(net.mine, o); for(const k in o) if(o[k] === null) delete net.mine[k]; pushState(); }
 
 /* ----- rooms ----- */
-async function joinRoom(){
-  const code = $('roomCode').value.toLowerCase().replace(/[^a-z0-9_.-]/g, '').replace(/^[^a-z0-9]+/, '').slice(0, 16);
-  $('roomCode').value = code;
+// room codes are never typed by whoever makes the room: 5 random consonants/digits (no vowels, so no word can come out). The server enforces the same format.
+const CODE_CHARS = 'bcdfghjkmnpqrstvwxz23456789';
+function randomRoomCode(){
+  const b = new Uint32Array(5);
+  if(window.crypto && crypto.getRandomValues) crypto.getRandomValues(b); else for(let i = 0; i < 5; i++) b[i] = Math.random() * 4294967296;
+  return Array.from(b, v => CODE_CHARS[v % CODE_CHARS.length]).join('');
+}
+async function joinRoom(opts){
+  const create = opts === true;
+  const code = create ? '' : $('roomCode').value.toLowerCase().replace(/[^a-z0-9_.-]/g, '').replace(/^[^a-z0-9]+/, '').slice(0, 16);
+  if(!create) $('roomCode').value = code;
   net.err = '';
   if(!acct.signedIn){ showAuth('سجّل دخول عشان تلعب أونلاين'); return; }
   if(acct.ban){ showBanned(); return; }
-  if(!code){ net.err = 'اكتب كود للغرفة (حروف إنجليزي وأرقام).'; updateOnlineUi(); return; }
+  if(!create && !code){ net.err = 'اكتب كود الغرفة اللي صاحبك بعتهولك، أو اعمل غرفة جديدة.'; updateOnlineUi(); return; }
   await leaveRoomNow();
   net.joining = true; updateOnlineUi();
   try{
     let st;
-    try{ st = await rpc('room_join', { p_code:code }); }
-    catch(e){
-      if(/no such room/.test(e.message)) st = await rpc('room_create', { p_code:code, p_max:roomMax, p_len:raceM, p_private:roomPrivate });
-      else throw e;
-    }
+    if(create){
+      for(let i = 0; ; i++){
+        const c = randomRoomCode();
+        try{ st = await rpc('room_create', { p_code:c, p_max:roomMax, p_len:raceM, p_private:roomPrivate }); $('roomCode').value = c; break; }
+        catch(e){ if(!/room exists/.test(e.message) || i >= 3) throw e; }
+      }
+    }else st = await rpc('room_join', { p_code:code });
     enterRoom(st);
   }catch(e){ net.err = errAr(e); }
   net.joining = false; updateOnlineUi();
@@ -1178,7 +1189,8 @@ async function onlineReady(){
   try{ net.room = await rpc('room_ready', { p_ready:true }); net.err = ''; }catch(e){ net.err = errAr(e); }
   updateOnlineUi();
 }
-$('roomGo').addEventListener('click', joinRoom);
+$('roomGo').addEventListener('click', () => joinRoom());
+$('roomNew').addEventListener('click', () => joinRoom(true));
 $('roomCode').addEventListener('keydown', e => { e.stopPropagation(); if(e.key === 'Enter'){ e.preventDefault(); joinRoom(); } });
 $('roomCode').value = load('stickrun:room', '');
 $('roomPriv').setAttribute('aria-pressed', roomPrivate ? 'true' : 'false');
@@ -1229,7 +1241,7 @@ function updateOnlineUi(){
   else if(!acct.signedIn){ msg = 'سجّل دخول عشان تلعب أونلاين.'; label = 'سجّل دخول'; can = true; }
   else if(acct.ban){ msg = 'حسابك محظور من الأونلاين: ' + ((acct.ban && acct.ban.reason) || ''); label = 'محظور'; }
   else if(net.joining){ msg = 'بدخل الغرفة...'; label = 'استنى'; }
-  else if(!net.room){ msg = net.err || 'اكتب كود غرفة وادخل، أو اختار غرفة مفتوحة من القايمة.'; label = 'ادخل غرفة الأول'; }
+  else if(!net.room){ msg = net.err || 'دوس «غرفة جديدة» وابعت الكود لصاحبك، أو اكتب كود صاحبك وادخل، أو اختار غرفة مفتوحة من القايمة.'; label = 'ادخل غرفة الأول'; }
   else{
     const r = net.room, n = r.members.length, readyN = r.members.filter(m => m.ready).length;
     const meM = r.members.find(m => m.id === acct.id), iReady = !!(meM && meM.ready);
