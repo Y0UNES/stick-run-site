@@ -126,7 +126,7 @@ body.vs .atk{display:flex}
 .st-tabs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
 .st-tabs .chip{flex:none}
 @media (pointer:coarse){ .chip{padding:6px 16px;min-height:38px} .pad:active{filter:brightness(.92)} }
-body.zm #tripBtn,body.zm #grabBtn{display:none !important}
+body:not(.zm) #medBtn{display:none !important}
 body.zm #keys,body:not(.zm) #zkeys{display:none !important}
 .stage.two .card{padding:8px 18px;max-width:min(96%,780px)}
 .stage.two .opts{display:flex;flex-wrap:wrap;justify-content:center;column-gap:16px}
@@ -324,6 +324,7 @@ body.vs .keys .k-atk{display:inline}
   #boostBtn{left:calc(102px + env(safe-area-inset-left,0px));bottom:8px;width:82px;height:82px;font-size:12px}
   #chargeBtn svg,#boostBtn svg{width:22px;height:22px}
   #brickBtn{right:calc(105px + env(safe-area-inset-right,0px));bottom:8px;width:76px;height:76px;font-size:11px}
+  #medBtn{left:calc(344px + env(safe-area-inset-left,0px));bottom:8px;width:70px;height:70px;font-size:11px}
   #tripBtn{left:calc(192px + env(safe-area-inset-left,0px));bottom:8px;width:70px;height:70px;font-size:11px}
   #grabBtn{left:calc(268px + env(safe-area-inset-left,0px));bottom:8px;width:70px;height:70px;font-size:11px}
   .controls .pad,.controls .atk{grid-column:auto}
@@ -382,7 +383,7 @@ body.vs .keys .k-atk{display:inline}
       <span><kbd>P</kbd> إيقاف</span>
     </div>
     <div class="keys" id="zkeys" aria-hidden="true">
-      <span><kbd>→</kbd> قدام</span><span><kbd>←</kbd> ورا</span><span><kbd>Space</kbd> قفز (مرتين)</span><span><kbd>↓</kbd> نزول من المنصة</span><span><kbd>F</kbd> نار</span><span><kbd>P</kbd> إيقاف</span>
+      <span><kbd>→</kbd><kbd>←</kbd> حركة</span><span><kbd>Space</kbd> قفز (مرتين)</span><span><kbd>F</kbd> نار</span><span><kbd>E</kbd> كاتانا</span><span><kbd>R</kbd> قنبلة</span><span><kbd>H</kbd> علاج</span><span><kbd>↓</kbd> نزول</span><span><kbd>P</kbd> إيقاف</span>
     </div>
     <div class="overlay" id="overlay">
       <div class="card">
@@ -423,7 +424,7 @@ body.vs .keys .k-atk{display:inline}
             <button class="chip" data-pl="4" type="button">4</button>
             <button class="chip" data-pl="6" type="button">6</button>
           </div>
-          <details class="how" id="zHow" hidden><summary>طريقة لعب الزومبي</summary><div>اوصل لآخر الطريق. الزومبي بييجوا من قدام ومن ورا، ومبيعرفوش يطلعوا فوق المنصات (بيعدّوا من تحتها). امشي قدام وورا بالأسهم (سرعة ثابتة)، واقفز مرتين، واضرب بزرار النار (F أو Q أو E). على الأرض الضرب في الناحية اللي بتبصلها، ولو فوق منصة والزومبي تحتك التصويب بيروح ناحيتهم لوحده. الإسعاف الأحمر فوق المنصات بيرجّع صحتك، والسهم لتحت بينزلك من المنصة. النتيجة نقاط وأرقام قياسية بس.</div></details>
+          <details class="how" id="zHow" hidden><summary>طريقة لعب الزومبي</summary><div>اوصل لآخر الطريق. الزومبي بييجوا من قدام ومن ورا، ومبيعرفوش يطلعوا فوق المنصات (بيعدّوا من تحتها). كل 100 متر فيه موجة كبيرة، وفي آخر 100 متر وحش ضخم. امشي قدام وورا بالأسهم (وكل ما صحتك تقل مشيتك تبقى أبطأ)، واقفز مرتين، واضرب بـ F أو Q، وبالكاتانا E (مدى طويل)، وبالقنابل R، واتعالج بـ H. تقدر تشيل علاج واحد و3 قنابل. على الأرض الضرب في الناحية اللي بتبصلها، ولو فوق منصة والزومبي تحتك التصويب بيروح ناحيتهم لوحده. السهم لتحت بينزلك من المنصة. لو وقعت عندك 30 ثانية: تقدر تضرب بس أبطأ، وزميلك لو وقف جنبك 5 ثواني متواصلة يقومك (مرتين بس في الجولة). النتيجة نقاط وأرقام قياسية بس.</div></details>
           <div class="recline" id="eventLine"></div>
           <div class="recline" id="recLine"></div>
           <div class="long" id="dailyLine"></div>
@@ -487,6 +488,10 @@ body.vs .keys .k-atk{display:inline}
     <button class="pad atk" id="grabBtn" type="button">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 12V6.5a1.5 1.5 0 013 0V11M11 10V5.5a1.5 1.5 0 013 0V10M14 10V7a1.5 1.5 0 013 0v6c0 4-2.5 7-6 7-3 0-4.5-2-5.5-4.5L4 12.5a1.5 1.5 0 012.6-1.4L8 13"/></svg>
       مسك
+    </button>
+    <button class="pad atk" id="medBtn" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      علاج
     </button>
     <button class="pad atk" id="brickBtn" type="button">
       <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="10" rx="1.5"/><path d="M3 12h18M9 7v5M15 12v5"/></svg>
@@ -1186,6 +1191,7 @@ function openChannel(code){
   });
   ch.on('broadcast', { event:'z' }, msg => zOnSnap(msg && msg.payload));       // the host's zombies
   ch.on('broadcast', { event:'zh' }, msg => zOnHit(msg && msg.payload));       // somebody hit one of them
+  ch.on('broadcast', { event:'zr' }, msg => zOnRevive(msg && msg.payload));    // a teammate picked me up
   ch.subscribe(status => { net.connected = status === 'SUBSCRIBED'; });
   net.chan = ch;
 }
@@ -2279,7 +2285,7 @@ const canStart = () => state === 'ready' || ((state === 'dead' || state === 'fin
 
 function newWorlds(){
   const seed = (Math.random() * 4294967296) >>> 0;
-  runBanked = false; lastEarned = 0; recNote = ''; zOn = false; zs = null;
+  runBanked = false; lastEarned = 0; recNote = ''; zOn = false; zs = null; musicStop();
   pw = makeWorld(seed, true);
   pw.skin = acct.skin; pw.look = acct.projectile;
   opps = [];
@@ -2327,7 +2333,7 @@ exitBtn.addEventListener('click', () => {
 function pause(){
   if(mode === 'online') return;                  // you can't pause someone else's race
   if(state === 'playing'){
-    state = 'paused'; slideHeld = false; boostHeld = false; chargeHeld = false; grabHeld = false; fireHeld = false; syncPad(); showPaused();
+    state = 'paused'; slideHeld = false; boostHeld = false; chargeHeld = false; grabHeld = false; fireHeld = false; musicStop(); syncPad(); showPaused();
   }
 }
 function resume(){ if(state === 'paused'){ state = 'playing'; hideOverlay(); last = performance.now(); } }
@@ -2368,7 +2374,7 @@ function checkFinish(){
 function jump(){ if(state !== 'playing') return; if(zOn){ zJump(); return; } if(!pw.dead) worldJump(pw); }
 function canAttack(){ return state === 'playing' && mode !== 'free' && !pw.dead && !safeStart(pw); }
 function doTrip(){
-  if(zOn){ if(state === 'playing') fireHeld = true; return; }
+  if(zOn){ if(state === 'playing') zSlash(); return; }
   if(!canAttack() || pw.tripCd > 0) return;
   if(mode === 'race'){ tripAttempt(pw, opps.map(o => o.w)); return; }
   pw.tripCd = TRIP_CD; pw.kickT = .3; myTp++;                      // online: the other player's game decides if it landed
@@ -2406,8 +2412,15 @@ addEventListener('keydown', e => {
     if(!e.repeat) doBrick();
   }else if(k === 'KeyF'){
     if(zOn && state === 'playing') fireHeld = true;
+  }else if(k === 'KeyH'){
+    if(zOn && state === 'playing' && !e.repeat) zMed();
+  }else if(k === 'KeyB'){
+    if(zOn && state === 'playing' && !e.repeat) zBomb();
+  }else if(k === 'KeyG'){
+    if(zOn && state === 'playing' && !e.repeat) zSlash();
   }else if(k === 'KeyR'){
     grabHeld = true;
+    if(zOn && state === 'playing' && !e.repeat) zBomb();
   }else if(k === 'Escape' || k === 'KeyP'){
     if(state === 'playing') pause(); else if(state === 'paused') resume();
   }else if(k === 'Enter' && !onButton){
@@ -2447,7 +2460,8 @@ holdPad(el.charge, () => { chargeHeld = true; }, () => { chargeHeld = false; });
 $('tripBtn').addEventListener('pointerdown', e => { e.preventDefault(); doTrip(); });
 $('brickBtn').addEventListener('pointerdown', e => { e.preventDefault(); doBrick(); });
 ['pointerup', 'pointercancel', 'pointerleave'].forEach(t => $('brickBtn').addEventListener(t, () => { fireHeld = false; }));
-holdPad($('grabBtn'), () => { grabHeld = true; }, () => { grabHeld = false; });
+holdPad($('grabBtn'), () => { grabHeld = true; if(zOn && state === 'playing') zBomb(); }, () => { grabHeld = false; });
+$('medBtn').addEventListener('pointerdown', e => { e.preventDefault(); if(zOn && state === 'playing') zMed(); });
 
 const mqPortraitPhone = matchMedia('(orientation:portrait) and (pointer:coarse) and (max-width:700px)');
 mqPortraitPhone.addEventListener('change', e => { if(e.matches){ slideHeld = boostHeld = chargeHeld = grabHeld = false; syncPad(); pause(); } });
@@ -3007,12 +3021,16 @@ function frame(now){
 
 
 /* ---------- zombie mode: shoot your way to the end of the road (alone, or together in an online room) ---------- */
-const ZW = 250, ZHP = 100, ZMAG = 12, ZRELOAD = 1.1, ZFIRE_CD = .2, ZBUL_V = 1150, ZBUL_LIFE = .6, ZMAX = 16, ZHIT_CD = 1, ZSAFE = 4, ZREVIVE = 6;
-// walkers are slow, runners fast and fragile, tanks slow and tough
+const ZW = 250, ZHP = 100, ZMAG = 12, ZRELOAD = 1.1, ZFIRE_CD = .2, ZDOWN_CD = .75, ZBUL_V = 1150, ZBUL_LIFE = .6, ZHIT_CD = 1, ZSAFE = 4;
+const ZWAVE_GAP = 5000;                                  // a big wave every 100 m, and the boss in the last 100 m
+const ZDOWN_TIME = 30, ZREV_NEED = 5, ZREV_MAX = 2, ZREV_RANGE = 70;   // 30 s to be picked up, 5 s of a mate standing by you, twice per run
+const ZBOMB_MAX = 3, ZBOMB_R = 135, ZBOMB_DMG = 8, ZKAT_USES = 15, ZKAT_RANGE = 135, ZKAT_CD = .45, ZKAT_DMG = 3, ZMED_HEAL = 45;
+// walkers are slow, runners fast and fragile, tanks slow and tough, and one huge boss at the end
 const ZTYPES = [
-  { sp:78,  hp:2, dmg:14, pts:10, w:13, h:62, col:'#5E9B4A' },
-  { sp:170, hp:1, dmg:10, pts:15, w:12, h:58, col:'#9ACB3A' },
-  { sp:54,  hp:7, dmg:30, pts:50, w:19, h:84, col:'#3F7A3A' }
+  { sp:78,  hp:2,  dmg:14, pts:10,  w:13, h:62,  col:'#5E9B4A' },
+  { sp:170, hp:1,  dmg:10, pts:15,  w:12, h:58,  col:'#9ACB3A' },
+  { sp:54,  hp:7,  dmg:30, pts:50,  w:19, h:84,  col:'#3F7A3A' },
+  { sp:42,  hp:60, dmg:35, pts:500, w:36, h:150, col:'#2E5A2B' }
 ];
 let zOn = false, zs = null, fireHeld = false, zUiOn = null;
 const zUi = () => mode === 'zombie' || zOn;
@@ -3031,33 +3049,142 @@ function zPlatforms(seed, fin){
   }
   return out;
 }
+// things to pick up: on some platforms, and a supply stash on the ground before every wave
+function zItems(seed, fin, plats){
+  const r = mulberry32(seed ^ 0xBEEF), items = [];
+  const kind = () => { const q = r(); return q < .4 ? 'med' : (q < .8 ? 'bomb' : 'katana'); };
+  plats.forEach(p => { if(p.kit) items.push({ x:p.x + p.w / 2, h:p.top, type:kind() }); });
+  for(let x = ZWAVE_GAP; x < fin; x += ZWAVE_GAP){
+    items.push({ x:x - 760, h:0, type:'bomb' }, { x:x - 700, h:0, type:'med' });
+    if(((x / ZWAVE_GAP) | 0) % 2 === 0) items.push({ x:x - 640, h:0, type:'katana' });
+  }
+  return items.map((it, i) => Object.assign(it, { i }));
+}
+
+/* --- sound: a low drone and a heartbeat that get louder and faster in a wave, plus groans, splats, slashes and booms --- */
+const zmusic = { nodes:null, pulse:0, sting:4, cur:0 };
+function zAudio(){
+  if(muted) return null;
+  try{ if(!ac) ac = new (window.AudioContext || window.webkitAudioContext)(); if(ac.state === 'suspended') ac.resume(); return ac; }catch(e){ return null; }
+}
+function zNoise(dur, vol, f1, f2, type){
+  const a = zAudio(); if(!a) return;
+  try{
+    const n = Math.floor(a.sampleRate * dur), buf = a.createBuffer(1, n, a.sampleRate), d = buf.getChannelData(0);
+    for(let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+    const src = a.createBufferSource(); src.buffer = buf;
+    const f = a.createBiquadFilter(); f.type = type || 'lowpass'; f.frequency.setValueAtTime(f1, a.currentTime); f.frequency.exponentialRampToValueAtTime(Math.max(30, f2), a.currentTime + dur);
+    const g = a.createGain(); g.gain.value = vol;
+    src.connect(f); f.connect(g); g.connect(a.destination); src.start();
+  }catch(e){}
+}
+let zGroanAt = 0;
+function zGroan(vol){
+  const a = zAudio(), now = performance.now();
+  if(!a || now - zGroanAt < 260) return;
+  zGroanAt = now;
+  try{
+    const t = a.currentTime, o = a.createOscillator(), f = a.createBiquadFilter(), g = a.createGain(), l = a.createOscillator(), lg = a.createGain();
+    o.type = 'sawtooth'; o.frequency.setValueAtTime(95 + Math.random() * 40, t); o.frequency.exponentialRampToValueAtTime(52 + Math.random() * 15, t + .7);
+    f.type = 'lowpass'; f.frequency.value = 420;
+    l.frequency.value = 7 + Math.random() * 4; lg.gain.value = 9; l.connect(lg); lg.connect(o.frequency);
+    g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.05 * vol, t + .12); g.gain.exponentialRampToValueAtTime(.0001, t + .75);
+    o.connect(f); f.connect(g); g.connect(a.destination);
+    o.start(t); l.start(t); o.stop(t + .8); l.stop(t + .8);
+  }catch(e){}
+}
+function zSplat(){ zNoise(.16, .12, 1500, 200, 'lowpass'); beep(190, 55, .16, 'sine', .08); }
+function zSwoosh(){ zNoise(.16, .12, 800, 4200, 'highpass'); }
+function zBoom(){ zNoise(.55, .35, 900, 60, 'lowpass'); beep(110, 28, .5, 'sine', .22); }
+function musicStop(){
+  const n = zmusic.nodes;
+  if(!n) return;
+  zmusic.nodes = null;
+  try{ n.master.gain.setTargetAtTime(0, ac.currentTime, .15); setTimeout(() => { n.osc.forEach(o => { try{ o.stop(); }catch(e){} }); try{ n.master.disconnect(); }catch(e){} }, 800); }catch(e){}
+}
+function musicStart(){
+  const a = zAudio();
+  if(!a || zmusic.nodes) return;
+  try{
+    const master = a.createGain(); master.gain.value = 0; master.connect(a.destination);
+    const filt = a.createBiquadFilter(); filt.type = 'lowpass'; filt.frequency.value = 300; filt.connect(master);
+    const osc = [], mk = (type, f, g) => { const o = a.createOscillator(), gg = a.createGain(); o.type = type; o.frequency.value = f; gg.gain.value = g; o.connect(gg); gg.connect(filt); o.start(); osc.push(o); return gg; };
+    mk('sawtooth', 55, .05); mk('sawtooth', 58.3, .045); mk('sine', 110, .04); mk('triangle', 82.4, .025);
+    const lfo = a.createOscillator(), lg = a.createGain(); lfo.frequency.value = .13; lg.gain.value = 120; lfo.connect(lg); lg.connect(filt.frequency); lfo.start(); osc.push(lfo);
+    zmusic.nodes = { master, filt, osc }; zmusic.pulse = 1; zmusic.sting = 5; zmusic.cur = 0;
+  }catch(e){}
+}
+function musicTick(h, inten){
+  if(muted){ musicStop(); return; }
+  if(!zmusic.nodes){ musicStart(); if(!zmusic.nodes) return; }
+  const a = ac, n = zmusic.nodes;
+  zmusic.cur += (inten - zmusic.cur) * Math.min(1, h * 1.5);
+  n.master.gain.setTargetAtTime(.35 + .55 * zmusic.cur, a.currentTime, .4);
+  n.filt.frequency.setTargetAtTime(260 + 1100 * zmusic.cur, a.currentTime, .5);
+  zmusic.pulse -= h; zmusic.sting -= h;
+  if(zmusic.pulse <= 0){                                  // heartbeat
+    zmusic.pulse = 1.35 - .8 * zmusic.cur;
+    try{
+      const t = a.currentTime, o = a.createOscillator(), g = a.createGain();
+      o.frequency.setValueAtTime(72, t); o.frequency.exponentialRampToValueAtTime(34, t + .2);
+      g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.3 + .25 * zmusic.cur, t + .02); g.gain.exponentialRampToValueAtTime(.0001, t + .28);
+      o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + .3);
+    }catch(e){}
+  }
+  if(zmusic.sting <= 0){                                  // an eerie high note now and then, harsher during a wave
+    zmusic.sting = (zmusic.cur > .6 ? 2.5 : 8) + Math.random() * (zmusic.cur > .6 ? 3 : 7);
+    try{
+      const t = a.currentTime, base = 520 + Math.random() * 260;
+      [base, base * 1.414].forEach((f, i) => {
+        const o = a.createOscillator(), g = a.createGain(), v = a.createOscillator(), vg = a.createGain();
+        o.type = i ? 'triangle' : 'sine'; o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * .82, t + 2);
+        v.frequency.value = 5.5; vg.gain.value = 8; v.connect(vg); vg.connect(o.frequency);
+        g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime((.03 + .03 * zmusic.cur) / (i + 1), t + .6); g.gain.exponentialRampToValueAtTime(.0001, t + 2.1);
+        o.connect(g); g.connect(a.destination); o.start(t); v.start(t); o.stop(t + 2.2); v.stop(t + 2.2);
+      });
+    }catch(e){}
+  }
+}
 
 function setPadText(btn, t){
   const nodes = [...btn.childNodes].filter(n => n.nodeType === 3 && n.textContent.trim());
   if(nodes.length) nodes[nodes.length - 1].textContent = '\n      ' + t + '\n    ';
 }
+let zInvSig = '';
 function zApplyUi(){
   const on = zUi();
   document.body.classList.toggle('zm', on);
   if(on === zUiOn) return;
-  zUiOn = on;
+  zUiOn = on; zInvSig = '';
   $('energyLbl').textContent = on ? 'الصحة' : 'الطاقة';
   $('coinsLbl').textContent = on ? 'القتلى' : 'النقاط';
   setPadText(el.boost, on ? 'قدام' : 'تسريع'); setPadText(el.charge, on ? 'ورا' : 'شحن'); setPadText(el.slide, on ? 'نزول' : 'انزلاق');
+  if(!on){ setPadText($('tripBtn'), 'كعبلة'); setPadText($('grabBtn'), 'مسك'); }
   lastAmmo = -1; lastE = -1; lastCoins = -1;
+}
+// the little action buttons carry the counts
+function zInvUi(){
+  const m = zs && zs.me;
+  if(!m) return;
+  const sig = m.kat + ':' + m.bombs + ':' + m.meds;
+  if(sig === zInvSig) return;
+  zInvSig = sig;
+  setPadText($('tripBtn'), 'كاتانا ' + m.kat); setPadText($('grabBtn'), 'قنبلة ' + m.bombs); setPadText($('medBtn'), 'علاج ' + m.meds);
 }
 
 function zNewMate(p){
-  return { id:p.id, name:String(p.name || 'لاعب').slice(0, 10), skin:SKIN_BY_ID[p.skin] ? p.skin : 'base', wx:0, h:0, on:true, face:1, hp:ZHP, down:false, fin:false, kills:0,
-           aim:0, flash:0, inv:0, phase:0, bu:[], buT:0, gone:false, sn:null, t0:performance.now() };
+  return { id:p.id, name:String(p.name || 'لاعب').slice(0, 10), skin:SKIN_BY_ID[p.skin] ? p.skin : 'base', wx:0, h:0, on:true, face:1, hp:ZHP, down:false, dead:false, fin:false, kills:0,
+           aim:0, flash:0, inv:0, phase:0, bu:[], bm:[], buT:0, gone:false, sn:null, t0:performance.now(), revT:0, revSentAt:0, dt:0, sl:0, kt:0, rv:null, rp:0 };
 }
 function zBegin(o){
   o = o || {};
-  const seed = o.seed !== undefined ? o.seed >>> 0 : (Math.random() * 4294967296) >>> 0, fin = (o.len || raceM) * 50;
-  zs = { fin, t:0, coop:!!o.coop, run:o.run || null, myId:(o.coop && acct.id) ? acct.id : 'me', plats:zPlatforms(seed, fin), taken:new Set(), zombies:[], bullets:[], nextId:1, bid:0,
+  const seed = o.seed !== undefined ? o.seed >>> 0 : (Math.random() * 4294967296) >>> 0, fin = (o.len || raceM) * 50, plats = zPlatforms(seed, fin);
+  zs = { fin, t:0, coop:!!o.coop, run:o.run || null, myId:(o.coop && acct.id) ? acct.id : 'me', plats, items:zItems(seed, fin, plats), taken:new Set(), zombies:[], bullets:[], bombs:[], fx:[], corpses:[], nextId:1, bid:0,
          spawnT:ZSAFE, rng:mulberry32((Math.random() * 4294967296) >>> 0), over:false, won:false, ended:false, counted:new Set(), recentKills:[], lastSend:0, lastSnap:0,
+         wave:null, wavesDone:new Set(), calmT:0, bossDone:false, wv:0, lastWv:0, bossSeen:false, banner:null, groanT:1,
          mates:o.mates || [],
-         me:{ wx:0, h:0, vy:0, on:true, jumps:2, face:1, hp:ZHP, inv:ZSAFE - 1, ammo:ZMAG, reload:0, cd:0, kills:0, down:false, downT:0, dropT:0, phase:0, flash:0, aimA:0, fin:false } };
+         me:{ wx:0, h:0, vy:0, on:true, jumps:2, face:1, hp:ZHP, inv:ZSAFE - 1, ammo:ZMAG, reload:0, cd:0, kills:0, down:false, dead:false, downT:0, dropT:0, phase:0, flash:0, aimA:0, fin:false,
+              bombs:0, meds:0, kat:0, kcd:0, slashT:0, bcd:0, revives:0, revIn:0 } };
   zOn = true;
   zApplyUi();
   Object.assign(pw, { scroll:0, dist:0, coinCount:0, energy:100, ammo:ZMAG, score:0, pop:null });
@@ -3073,7 +3200,7 @@ function zJump(){
 /* --- the team (online) --- */
 function zPlayers(){
   const z = zs, m = z.me;
-  return [{ id:z.myId, wx:m.wx, h:m.h, down:m.down, fin:m.fin }].concat(z.mates.filter(t => !t.gone).map(t => ({ id:t.id, wx:t.wx, h:t.h, down:t.down, fin:t.fin })));
+  return [{ id:z.myId, wx:m.wx, h:m.h, down:m.down, dead:m.dead, fin:m.fin }].concat(z.mates.filter(t => !t.gone).map(t => ({ id:t.id, wx:t.wx, h:t.h, down:t.down, dead:t.dead, fin:t.fin })));
 }
 // the player with the smallest id who is still sending runs the zombies; if they drop out, the next one takes over from the last snapshot
 function zIsHost(){
@@ -3085,13 +3212,15 @@ function zIsHost(){
   return min === z.myId;
 }
 function zMates(h){
-  const z = zs, now = performance.now();
+  const z = zs, m = z.me, now = performance.now();
+  m.revIn = 0;
   for(const t of z.mates){
     const sn = net.states[t.id];
     if(sn && sn !== t.sn){
       if(t.tx === undefined){ t.wx = sn.s; t.h = sn.h; }
-      t.sn = sn; t.buT = now; t.tx = sn.s; t.th = sn.h; t.on = sn.on === 1; t.face = sn.fc || 1; t.hp = sn.hp; t.down = sn.dn === 1; t.fin = sn.fn === 1;
-      t.kills = sn.k | 0; t.aim = sn.aa || 0; if(sn.fl === 1) t.flash = .08; t.inv = sn.iv === 1 ? 1 : 0; t.bu = Array.isArray(sn.bu) ? sn.bu : [];
+      t.sn = sn; t.buT = now; t.tx = sn.s; t.th = sn.h; t.on = sn.on === 1; t.face = sn.fc || 1; t.hp = sn.hp; t.down = sn.dn === 1; t.dead = sn.dd === 1; t.fin = sn.fn === 1;
+      t.kills = sn.k | 0; t.aim = sn.aa || 0; if(sn.fl === 1) t.flash = .08; t.inv = sn.iv === 1 ? 1 : 0; t.bu = Array.isArray(sn.bu) ? sn.bu : []; t.bm = Array.isArray(sn.bm) ? sn.bm : [];
+      t.dt = sn.dt || 0; t.sl = sn.sl | 0; t.kt = sn.kt | 0; t.rv = sn.rv || null; t.rp = sn.rp || 0;
       t.gone = sn.qt === 1;
     }
     if(t.tx !== undefined){
@@ -3101,16 +3230,35 @@ function zMates(h){
     }
     if(t.flash > 0) t.flash -= h;
     const seen = net.seen[t.id];
-    if(!t.down && !t.fin && ((seen && now - seen > 6000) || (!seen && now - t.t0 > 10000))) t.gone = true;     // went quiet while still running
+    if(!t.down && !t.dead && !t.fin && ((seen && now - seen > 6000) || (!seen && now - t.t0 > 10000))) t.gone = true;     // went quiet while still running
+    if(t.rv === z.myId) m.revIn = Math.max(m.revIn, t.rp);
+    // staying next to a mate who is down for 5 seconds in a row brings them back
+    if(t.down && !t.dead && !t.gone && !m.down && !m.fin && Math.abs(t.wx - m.wx) < ZREV_RANGE && Math.abs(t.h - m.h) < 70){
+      t.revT += h;
+      if(t.revT >= ZREV_NEED){
+        t.revT = 0;
+        if(now - t.revSentAt > 1500){ t.revSentAt = now; if(net.chan && net.connected){ try{ net.chan.send({ type:'broadcast', event:'zr', payload:{ to:t.id, from:z.myId } }); }catch(e){} } }
+      }
+    }else t.revT = 0;
   }
-  zs.mates.forEach((t, i) => { const o = opps[i]; if(o && o.kind === 'zmate'){ o.w.scroll = t.wx; o.w.dist = Math.floor(t.wx / 50); o.dnf = t.gone; } });
+  zs.mates.forEach((t, i) => { const o = opps[i]; if(o && o.kind === 'zmate'){ o.w.scroll = t.wx; o.w.dist = Math.floor(t.wx / 50); o.dnf = t.gone || t.dead; } });
+}
+function zOnRevive(p){
+  const z = zs, m = z && z.me;
+  if(!zOn || !z || !z.coop || !p || p.to !== z.myId || !m.down || m.dead || m.revives >= ZREV_MAX) return;
+  Object.assign(m, { down:false, hp:50, h:0, vy:0, on:true, jumps:2, inv:2.5, revIn:0 });
+  m.revives++;
+  popup(pw, 'اتقمت!'); beep(400, 900, .3, 'triangle', .07);
 }
 function zSendPresence(){
   const z = zs, m = z.me, now = performance.now();
   if(!z.coop || now - z.lastSend < 80) return;
   z.lastSend = now;
-  Object.assign(net.mine, { s:Math.round(m.wx * 10) / 10, h:Math.round(m.h), on:m.on ? 1 : 0, fc:m.face, hp:Math.round(m.hp), dn:m.down ? 1 : 0, fn:m.fin ? 1 : 0, k:m.kills,
-    aa:Math.round(m.aimA * 100) / 100, fl:m.flash > 0 ? 1 : 0, iv:m.inv > 0 ? 1 : 0, bu:z.bullets.map(b => [Math.round(b.x), Math.round(b.h), Math.round(b.vx), Math.round(b.vy)]), sk:acct.skin });
+  let rv = null, rp = 0;
+  for(const t of z.mates) if(t.revT > 0){ rv = t.id; rp = Math.round(t.revT / ZREV_NEED * 100) / 100; break; }
+  Object.assign(net.mine, { s:Math.round(m.wx * 10) / 10, h:Math.round(m.h), on:m.on ? 1 : 0, fc:m.face, hp:Math.round(m.hp), dn:m.down ? 1 : 0, dd:m.dead ? 1 : 0, fn:m.fin ? 1 : 0, k:m.kills,
+    aa:Math.round(m.aimA * 100) / 100, fl:m.flash > 0 ? 1 : 0, iv:m.inv > 0 ? 1 : 0, dt:Math.max(0, Math.round(m.downT)), sl:m.slashT > 0 ? 1 : 0, kt:m.kat > 0 ? 1 : 0, rv, rp,
+    bu:z.bullets.map(b => [Math.round(b.x), Math.round(b.h), Math.round(b.vx), Math.round(b.vy)]), bm:z.bombs.map(b => [Math.round(b.x), Math.round(b.h)]), sk:acct.skin });
   pushState();
 }
 function zSendSnap(){
@@ -3118,21 +3266,22 @@ function zSendSnap(){
   if(!z.coop || !net.chan || !net.connected || now - z.lastSnap < 100) return;
   z.lastSnap = now;
   z.recentKills = z.recentKills.filter(k => z.t - k[3] < 4);
-  try{ net.chan.send({ type:'broadcast', event:'z', payload:{ u:z.myId, z:z.zombies.map(e => [e.id, e.ty, Math.round(e.x), e.hp, e.dir, e.mv ? 1 : 0]), ks:z.recentKills.map(k => [k[0], k[1], k[2]]) } }); }catch(e){}
+  try{ net.chan.send({ type:'broadcast', event:'z', payload:{ u:z.myId, wv:z.wv, z:z.zombies.map(e => [e.id, e.ty, Math.round(e.x), e.hp, e.dir, e.mv ? 1 : 0, e.mh || 0]), ks:z.recentKills.map(k => [k[0], k[1], k[2]]) } }); }catch(e){}
 }
 function zOnSnap(p){
   const z = zs;
   if(!zOn || !z || !z.coop || !p || zIsHost()) return;
-  const keep = new Map(z.zombies.map(e => [e.id, e])), out = [], now = performance.now();
+  const keep = new Map(z.zombies.map(e => [e.id, e])), out = [], now = performance.now(), seen = new Set();
   for(const a of (p.z || [])){
     const id = a[0];
     let e = keep.get(id);
     if(!e) e = { id, ty:a[1], x:a[2], hp:a[3], dir:a[4], spd:1, flash:0, phase:Math.random() * 6 };
-    e.hp = a[3]; e.dir = a[4]; e.mv = a[5]; e.xs = a[2]; e.sT = now;
-    out.push(e);
+    e.hp = a[3]; e.dir = a[4]; e.mv = a[5]; e.mh = a[6] || ZTYPES[e.ty].hp; e.xs = a[2]; e.sT = now;
+    out.push(e); seen.add(id);
     if(z.nextId <= id) z.nextId = id + 1;
   }
-  z.zombies = out;
+  for(const e of z.zombies) if(!seen.has(e.id) && (p.ks || []).some(k => k[0] === e.id)) zCorpse(e);        // killed by a teammate
+  z.zombies = out; z.wv = p.wv | 0;
   for(const k of (p.ks || [])) if(k[1] === z.myId && !z.counted.has(k[0])){ z.counted.add(k[0]); zKill(k[2]); }
 }
 function zOnHit(p){
@@ -3150,15 +3299,15 @@ function zNetEnd(){
   rpc('zombie_end', { p_run:z.run }).catch(() => {});
 }
 
-/* --- shooting --- */
+/* --- fighting --- */
 function zFire(){
   const z = zs, m = z.me;
-  if(m.down || m.fin || z.over || m.cd > 0 || m.reload > 0 || state !== 'playing') return;
+  if(m.dead || m.fin || z.over || m.cd > 0 || m.reload > 0 || state !== 'playing') return;
   if(m.ammo <= 0){ m.reload = ZRELOAD; return; }
-  m.ammo--; m.cd = ZFIRE_CD; m.flash = .08;
+  m.ammo--; m.cd = m.down ? ZDOWN_CD : ZFIRE_CD; m.flash = .08;
   if(m.ammo <= 0) m.reload = ZRELOAD;
   let dx = m.face, dy = 0;
-  if(m.h > 58){                                       // up on a platform: shoot at whoever is below
+  if(!m.down && m.h > 58){                              // up on a platform: shoot at whoever is below
     let best = null, bd = 460;
     for(const e of z.zombies){ if(e.hp <= 0) continue; const d = Math.abs(e.x - m.wx); if(d < bd){ bd = d; best = e; } }
     if(best){
@@ -3168,25 +3317,73 @@ function zFire(){
     }
   }
   m.aimA = Math.atan2(dy, Math.abs(dx));
-  z.bullets.push({ id:++z.bid, x:m.wx + dx * 20, h:m.h + 38 + dy * 20, vx:dx * ZBUL_V, vy:dy * ZBUL_V, t:ZBUL_LIFE });
+  z.bullets.push({ id:++z.bid, x:m.wx + dx * 20, h:m.h + (m.down ? 14 : 38) + dy * 20, vx:dx * ZBUL_V, vy:dy * ZBUL_V, t:ZBUL_LIFE });
   beep(720, 240, .07, 'square', .04);
+}
+// the katana: a long reach, hits everything in front of you
+function zSlash(){
+  const z = zs, m = z.me;
+  if(m.down || m.fin || z.over || state !== 'playing' || m.kcd > 0) return;
+  if(m.kat <= 0){ popup(pw, 'مفيش كاتانا'); return; }
+  m.kat--; m.kcd = ZKAT_CD; m.slashT = .18;
+  zSwoosh();
+  for(const e of z.zombies){
+    const Ty = ZTYPES[e.ty], d = (e.x - m.wx) * m.face;
+    if(e.hp > 0 && d > -20 && d < ZKAT_RANGE + Ty.w && Math.abs(m.h - Ty.h * .4) < 120) zHitZombie(e, ZKAT_DMG);
+  }
+  if(m.kat === 0) popup(pw, 'الكاتانا اتكسرت');
+}
+function zBomb(){
+  const z = zs, m = z.me;
+  if(m.down || m.fin || z.over || state !== 'playing' || m.bcd > 0) return;
+  if(m.bombs <= 0){ popup(pw, 'مفيش قنابل'); return; }
+  m.bombs--; m.bcd = .5;
+  z.bombs.push({ x:m.wx + m.face * 18, h:m.h + 40, vx:m.face * 380, vy:520, t:1.2 });
+  beep(300, 200, .08, 'triangle', .05);
+}
+function zMed(){
+  const m = zs.me;
+  if(m.down || m.fin || zs.over || state !== 'playing') return;
+  if(m.meds <= 0){ popup(pw, 'مفيش علاج'); return; }
+  if(m.hp >= ZHP) return;
+  m.meds--; m.hp = Math.min(ZHP, m.hp + ZMED_HEAL); popup(pw, '+' + ZMED_HEAL + ' صحة'); beep(500, 1000, .18, 'sine', .06);
 }
 function zKill(ty){
   zs.me.kills++;
   popup(pw, '+' + ZTYPES[ty].pts);
-  beep(300, 620, .1, 'triangle', .05);
 }
-// my bullet touched a zombie: the host owns the zombies, so when it isn't me I tell it
-function zHitZombie(e){
+// a hit on a zombie: the host owns the zombies, so when it isn't me I tell it
+function zHitZombie(e, d){
+  d = d || 1;
   const z = zs;
-  e.hp--; e.flash = .12;
+  e.hp -= d; e.flash = .12;
   if(zIsHost()){
     if(e.hp <= 0){ z.counted.add(e.id); zKill(e.ty); z.recentKills.push([e.id, z.myId, e.ty, z.t]); }
-    else beep(190, 100, .06, 'sawtooth', .035);
+    else if(d === 1) beep(190, 100, .06, 'sawtooth', .035);
   }else{
-    if(net.chan && net.connected){ try{ net.chan.send({ type:'broadcast', event:'zh', payload:{ u:z.myId, z:e.id, d:1 } }); }catch(err){} }
-    if(e.hp > 0) beep(190, 100, .06, 'sawtooth', .035);
+    if(net.chan && net.connected){ try{ net.chan.send({ type:'broadcast', event:'zh', payload:{ u:z.myId, z:e.id, d } }); }catch(err){} }
+    if(e.hp > 0 && d === 1) beep(190, 100, .06, 'sawtooth', .035);
   }
+}
+function zCorpse(e){
+  const z = zs;
+  z.corpses.push({ x:e.x, ty:e.ty, dir:e.dir || 1, t:2, phase:e.phase });
+  if(z.corpses.length > 40) z.corpses.shift();
+  if(Math.abs(e.x - z.me.wx) < 700) zSplat();
+}
+function zReap(cull){
+  const z = zs, m = z.me;
+  z.zombies = z.zombies.filter(e => {
+    if(e.hp <= 0){ zCorpse(e); return false; }
+    return !cull || Math.abs(e.x - m.wx) < 1800 || cull.some(p => Math.abs(p.wx - e.x) < 1500);
+  });
+}
+function zExplode(b){
+  const z = zs, m = z.me;
+  z.fx.push({ x:b.x, h:Math.max(0, b.h), t:.45 });
+  zBoom();
+  if(!reduceMotion && Math.abs(b.x - m.wx) < 500) pw.shake = Math.max(pw.shake, .45);
+  for(const e of z.zombies) if(e.hp > 0 && Math.abs(e.x - b.x) < ZBOMB_R + ZTYPES[e.ty].w && b.h < ZTYPES[e.ty].h + 60) zHitZombie(e, ZBOMB_DMG);
 }
 
 function zHurt(d, fromX){
@@ -3194,38 +3391,80 @@ function zHurt(d, fromX){
   m.hp -= d; m.inv = ZHIT_CD; pw.shake = reduceMotion ? 0 : .5;
   m.wx = Math.max(0, m.wx + (m.wx >= fromX ? 1 : -1) * 35);
   beep(170, 70, .2, 'sawtooth', .06);
-  if(m.hp <= 0){ m.hp = 0; m.down = true; m.vy = 300; m.downT = ZREVIVE; }
+  if(m.hp <= 0){
+    m.hp = 0; m.down = true; m.vy = 300; m.downT = ZDOWN_TIME;
+    if(!zs.coop || m.revives >= ZREV_MAX) m.dead = true;           // alone, or already picked up twice: no more chances
+  }
+}
+// zombies keep chewing on somebody who is down: it shortens the time they have left
+function zHurtDown(){
+  const m = zs.me;
+  m.inv = ZHIT_CD; m.downT -= 4; pw.shake = reduceMotion ? 0 : .3;
+  beep(150, 60, .15, 'sawtooth', .05);
 }
 
 /* --- the zombies (run by the host) --- */
-function zSpawn(act, n){
+function zType(prog, k){
+  const r = zs.rng;
+  return r() < Math.min(.22, .05 + .12 * prog + .01 * k) ? 2 : (r() < Math.min(.5, .3 + .25 * prog) ? 1 : 0);
+}
+function zSpawnAt(anchors, ty, front){
   const z = zs, r = z.rng;
-  const lead = Math.max(...act.map(p => p.wx)), tail = Math.min(...act.map(p => p.wx)), prog = Math.min(1, lead / z.fin);
-  z.spawnT = Math.max(.7, 1.9 - prog * 1.2) / (1 + .45 * (n - 1));
-  const rearOk = tail > 500, k = r() < .25 ? 2 : 1;
-  for(let i = 0; i < k; i++){
-    const front = !rearOk || r() < .55;
-    const ty = r() < .06 + .12 * prog ? 2 : (r() < .3 + .25 * prog ? 1 : 0);
-    const x = front ? Math.min(z.fin + 200, lead + W / 2 + 70 + r() * 260) : tail - W / 2 - 70 - r() * 260;
-    z.zombies.push({ id:z.nextId++, ty, x, hp:ZTYPES[ty].hp, dir:front ? -1 : 1, spd:.9 + r() * .25, flash:0, phase:r() * 6, mv:1 });
+  const lead = Math.max(...anchors.map(p => p.wx)), tail = Math.min(...anchors.map(p => p.wx));
+  const f = front || tail <= 400;
+  const x = f ? Math.min(z.fin + 250, lead + W / 2 + 70 + r() * 320) : tail - W / 2 - 70 - r() * 320;
+  const hp = ty === 3 ? ZTYPES[3].hp + 25 * (zPlayers().length - 1) : ZTYPES[ty].hp;
+  z.zombies.push({ id:z.nextId++, ty, x, hp, mh:hp, dir:f ? -1 : 1, spd:ty === 3 ? 1 : .9 + r() * .25, flash:0, phase:r() * 6, mv:1 });
+}
+function zSpawn(anchors, n, mult){
+  const z = zs, r = z.rng;
+  const lead = Math.max(...anchors.map(p => p.wx)), prog = Math.min(1, lead / z.fin);
+  z.spawnT = Math.max(.7, 1.9 - prog * 1.2) / (1 + .45 * (n - 1)) * mult;
+  const k = r() < .25 ? 2 : 1;
+  for(let i = 0; i < k; i++) zSpawnAt(anchors, zType(prog, 0), r() < .55);
+}
+function zWaves(h, anchors, n, anyDown){
+  const z = zs;
+  if(!anchors.length) return;
+  const lead = Math.max(...anchors.map(p => p.wx));
+  if(z.wave){
+    const w = z.wave; w.t += h; w.acc += h;
+    while(w.acc >= .13 && w.left > 0){ w.acc -= .13; w.left--; zSpawnAt(anchors, zType(Math.min(1, lead / z.fin), w.k), (w.left % 2) === 0); }
+    if((w.left <= 0 && z.zombies.length <= 3) || w.t > 50){ z.wave = null; z.calmT = 14; z.spawnT = 5; }
+    return;
+  }
+  const k = z.wavesDone.size + 1;
+  if(k * ZWAVE_GAP < z.fin - ZWAVE_GAP && lead >= k * ZWAVE_GAP && !anyDown){                 // no new wave while somebody is waiting to be picked up
+    z.wavesDone.add(k);
+    z.wave = { k, left:Math.min(60, Math.round((12 + 5 * k) * (1 + .5 * (n - 1)))), t:0, acc:0 };
+  }
+  if(!z.bossDone && lead >= z.fin - ZWAVE_GAP && z.fin > ZWAVE_GAP){                         // the last 100 m: the big one
+    z.bossDone = true;
+    zSpawnAt(anchors, 3, true);
   }
 }
 function zSim(h, players){
-  const z = zs, act = players.filter(p => !p.down && !p.fin);
+  const z = zs;
+  const alive = players.filter(p => !p.fin && !p.dead), standing = alive.filter(p => !p.down), anyDown = alive.some(p => p.down);
+  const anchors = standing.length ? standing : alive;
+  zWaves(h, anchors, players.length, anyDown);
+  z.wv = z.wave ? z.wave.k : 0;
   z.spawnT -= h;
-  if(z.spawnT <= 0 && z.zombies.length < ZMAX + 5 * (players.length - 1) && act.length) zSpawn(act, players.length);
+  if(z.calmT > 0) z.calmT -= h;
+  const cap = z.wave ? 70 : Math.round((16 + 5 * (players.length - 1)) * (anyDown ? .5 : 1));
+  if(!z.wave && z.spawnT <= 0 && z.zombies.length < cap && anchors.length) zSpawn(anchors, players.length, anyDown ? 2.2 : (z.calmT > 0 ? 2.8 : 1));
   for(const e of z.zombies){
     if(e.flash > 0) e.flash -= h;
     const Ty = ZTYPES[e.ty];
     let tgt = null, bd = 1e9;
-    for(const p of act){ const d = Math.abs(p.wx - e.x); if(d < bd){ bd = d; tgt = p; } }
+    for(const p of alive){ const d = Math.abs(p.wx - e.x); if(d < bd){ bd = d; tgt = p; } }       // they go for whoever is closest, down or not
     e.mv = 0;
     if(!tgt) continue;
     const dx = tgt.wx - e.x;
     e.dir = dx >= 0 ? 1 : -1;
     if(Math.abs(dx) > 10 && !(tgt.h > 70 && Math.abs(dx) < 16)){ e.x += e.dir * Ty.sp * e.spd * h; e.phase += h * Ty.sp * .05; e.mv = 1; }   // under a platform they just stand there
   }
-  z.zombies = z.zombies.filter(e => e.hp > 0 && (!act.length || act.some(p => Math.abs(p.wx - e.x) < 1500)));
+  zReap(alive.length ? alive : null);
 }
 // everybody else just follows the host's snapshots
 function zFollow(h){
@@ -3239,7 +3478,7 @@ function zFollow(h){
     }
     if(e.mv) e.phase += h * Ty.sp * .05;
   }
-  z.zombies = z.zombies.filter(e => e.hp > 0);
+  zReap(null);
 }
 
 function zTick(h){
@@ -3249,9 +3488,13 @@ function zTick(h){
   if(pw.pop){ pw.pop.life -= h * 1.1; if(pw.pop.life <= 0) pw.pop = null; }
   if(pw.shake > 0) pw.shake = Math.max(0, pw.shake - h * 3);
   if(m.flash > 0) m.flash -= h;
+  if(m.slashT > 0) m.slashT -= h;
+  if(m.kcd > 0) m.kcd -= h;
+  if(m.bcd > 0) m.bcd -= h;
   if(!m.down && !m.fin){
     const dir = (boostHeld ? 1 : 0) - (chargeHeld ? 1 : 0);
-    if(dir){ m.wx = Math.max(0, Math.min(z.fin + 40, m.wx + dir * ZW * h)); m.face = dir; m.phase += h * 9; }
+    const spd = ZW * (.55 + .45 * m.hp / ZHP);                    // the lower your health the slower you walk
+    if(dir){ m.wx = Math.max(0, Math.min(z.fin + 40, m.wx + dir * spd * h)); m.face = dir; m.phase += h * 9 * spd / ZW; }
     // jumping and landing; platforms are one-way: you jump up through them and land on top
     if(m.dropT > 0) m.dropT -= h;
     if(slideHeld && m.on && m.h > .5){ m.dropT = .28; m.on = false; m.vy = -60; }
@@ -3262,34 +3505,36 @@ function zTick(h){
     if(m.dropT <= 0) for(const p of z.plats) if(m.wx > p.x - 8 && m.wx < p.x + p.w + 8 && prev >= p.top - 6) floor = Math.max(floor, p.top);
     if(m.h <= floor && m.vy <= 0){ m.h = floor; m.vy = 0; m.on = true; m.jumps = 2; }
     else if(m.h > floor + .5) m.on = false;
-    // shooting
-    if(m.cd > 0) m.cd -= h;
-    if(m.reload > 0){ m.reload -= h; if(m.reload <= 0) m.ammo = ZMAG; }
-    if(fireHeld) zFire();
-    // medkits on the platforms
-    z.plats.forEach((p, i) => {
-      if(!p.kit || z.taken.has(i)) return;
-      if(Math.abs(m.wx - (p.x + p.w / 2)) < 36 && Math.abs(m.h - p.top) < 30){
-        z.taken.add(i); m.hp = Math.min(ZHP, m.hp + 35); popup(pw, '+35 صحة'); beep(500, 1000, .18, 'sine', .06);
-      }
-    });
-    // a zombie touching you (you are safe up on a platform, or while you're jumping over one)
-    if(m.inv > 0) m.inv -= h;
-    else for(const e of z.zombies){
-      const Ty = ZTYPES[e.ty];
-      if(e.hp > 0 && Math.abs(e.x - m.wx) < Ty.w + 10 && m.h < Ty.h * .8){ zHurt(Ty.dmg, e.x); break; }
+    // things lying around
+    for(const it of z.items){
+      if(z.taken.has(it.i) || Math.abs(m.wx - it.x) > 34 || Math.abs(m.h - it.h) > 44) continue;
+      if(it.type === 'med'){ if(m.meds >= 1) continue; m.meds = 1; popup(pw, 'علاج +1'); }
+      else if(it.type === 'bomb'){ if(m.bombs >= ZBOMB_MAX) continue; m.bombs = Math.min(ZBOMB_MAX, m.bombs + 2); popup(pw, 'قنابل'); }
+      else{ m.kat = ZKAT_USES; popup(pw, 'كاتانا!'); }
+      z.taken.add(it.i); beep(500, 900, .15, 'sine', .06);
     }
-    if(m.wx >= z.fin){ m.fin = true; m.wx = z.fin; }
   }else if(m.down){
     m.vy -= GRAV * h; m.h = Math.max(0, m.h + m.vy * h); if(m.h === 0) m.vy = 0;
-    if(z.coop && !z.over){                              // a teammate who is still standing brings you back
+    const dir = (boostHeld ? 1 : 0) - (chargeHeld ? 1 : 0);
+    if(dir) m.face = dir;                                         // you can't move, but you can turn
+    if(!m.dead){
       m.downT -= h;
-      if(m.downT <= 0){
-        const buddy = z.mates.filter(t => !t.gone && !t.down && !t.fin)[0];
-        if(buddy){ Object.assign(m, { down:false, hp:50, wx:Math.max(0, buddy.wx - 40), h:0, vy:0, on:true, jumps:2, inv:2.5 }); popup(pw, 'رجعت!'); }
-      }
+      if(m.downT <= 0){ m.dead = true; m.downT = 0; }
     }
   }
+  // shooting (slower when you're down), reloading
+  if(m.cd > 0) m.cd -= h;
+  if(m.reload > 0){ m.reload -= h; if(m.reload <= 0) m.ammo = ZMAG; }
+  if(fireHeld && !m.dead) zFire();
+  // a zombie touching you (you are safe up on a platform, or while you're jumping over one)
+  if(m.inv > 0) m.inv -= h;
+  else if(!m.fin && !m.dead){
+    for(const e of z.zombies){
+      const Ty = ZTYPES[e.ty];
+      if(e.hp > 0 && Math.abs(e.x - m.wx) < Ty.w + 10 && (m.down || m.h < Ty.h * .8)){ if(m.down) zHurtDown(); else zHurt(Ty.dmg, e.x); break; }
+    }
+  }
+  if(!m.down && !m.fin && m.wx >= z.fin){ m.fin = true; m.wx = z.fin; }
   // zombies
   const host = zIsHost();
   if(host) zSim(h, zPlayers()); else zFollow(h);
@@ -3299,16 +3544,44 @@ function zTick(h){
     if(b.h < 0) b.t = 0;
     for(const e of z.zombies){
       const Ty = ZTYPES[e.ty];
-      if(e.hp > 0 && Math.abs(b.x - e.x) < Ty.w + 5 && b.h > -4 && b.h < Ty.h + 4){ b.t = 0; zHitZombie(e); break; }
+      if(e.hp > 0 && Math.abs(b.x - e.x) < Ty.w + 5 && b.h > -4 && b.h < Ty.h + 4){ b.t = 0; zHitZombie(e, 1); break; }
     }
   }
   z.bullets = z.bullets.filter(b => b.t > 0);
-  z.zombies = z.zombies.filter(e => e.hp > 0);
+  // bombs: they arc through the air and go off when they land or touch somebody
+  for(const b of z.bombs){
+    b.vy -= 1500 * h; b.x += b.vx * h; b.h += b.vy * h; b.t -= h;
+    if(b.t <= 0 || (b.h <= 0 && b.vy < 0) || z.zombies.some(e => e.hp > 0 && Math.abs(b.x - e.x) < ZTYPES[e.ty].w + 8 && b.h < ZTYPES[e.ty].h)){ b.dead = true; zExplode(b); }
+  }
+  z.bombs = z.bombs.filter(b => !b.dead);
+  for(const f of z.fx) f.t -= h;
+  z.fx = z.fx.filter(f => f.t > 0);
+  for(const c of z.corpses) c.t -= h;
+  z.corpses = z.corpses.filter(c => c.t > 0);
+  zReap(null);
   if(z.coop){ zSendPresence(); if(host) zSendSnap(); }
+  // waves and the boss: announcements, noise and music
+  const boss = z.zombies.some(e => e.ty === 3);
+  if(z.wv !== z.lastWv){ if(z.wv){ z.banner = { t:3, text:'موجة زومبي!' }; zGroan(2); beep(120, 60, .6, 'sawtooth', .08); } z.lastWv = z.wv; }
+  if(boss && !z.bossSeen){ z.bossSeen = true; z.banner = { t:3.5, text:'الوحش الكبير!' }; beep(90, 40, .8, 'sawtooth', .1); }
+  if(z.banner){ z.banner.t -= h; if(z.banner.t <= 0) z.banner = null; }
+  z.groanT -= h;
+  if(z.groanT <= 0){
+    z.groanT = (z.wv ? .35 : .9) + Math.random() * .9;
+    const near = z.zombies.filter(e => Math.abs(e.x - m.wx) < 650);
+    if(near.length) zGroan(Math.min(1.6, .5 + near.length / 8));
+  }
+  const nearN = z.zombies.filter(e => Math.abs(e.x - m.wx) < 700).length;
+  musicTick(h, Math.min(1, .12 + nearN / 20 + (z.wv ? .5 : 0) + (boss ? .3 : 0)));
+  zInvUi();
   // the hud numbers
   Object.assign(pw, { scroll:m.wx, dist:Math.floor(m.wx / 50), coinCount:m.kills, energy:m.hp, ammo:m.reload > 0 ? 0 : m.ammo });
-  // the run is over once nobody is left running: everyone has made it or is down for good
-  if(!z.over && !zPlayers().some(p => !p.down && !p.fin)) zOver(m.fin);
+  // the run is over once nobody is left on their feet: everyone has made it or fallen (anybody still down can't be picked up any more)
+  const pl = zPlayers();
+  if(!z.over && !pl.some(p => !p.down && !p.fin && !p.dead)){
+    if(m.down && !m.dead) m.dead = true;
+    zOver(m.fin);
+  }
 }
 
 function zScore(){ const m = zs.me; return m.kills * 10 + Math.floor(m.wx / 50) + (m.fin ? 200 : 0); }
@@ -3317,6 +3590,7 @@ function zOver(escaped){
   if(z.over) return;
   z.over = true; z.won = escaped;
   state = (escaped || z.coop) ? 'finished' : 'dead'; endShown = false;
+  musicStop();
   z.score = zScore();
   z.newBest = z.score > zBest(raceM);
   if(z.newBest) save('stickrun:zbest:' + raceM, z.score);
@@ -3336,15 +3610,15 @@ function showZEnd(){
   if(z.newBest) html += '<br>رقم قياسي جديد في النقاط!';
   if(z.won) html += '<br>وصلت في ' + z.t.toFixed(1) + ' ث' + (z.newRec ? ' — أسرع وقت ليك!' : (z.prevRec ? ' — أفضل وقت ' + z.prevRec.toFixed(1) + ' ث' : ''));
   if(z.coop){
-    const st = t => t.fin ? 'وصل' : (t.down ? 'وقع' : (t.gone ? 'خرج' : 'لسه بيجري'));
-    html += '<br>' + ['<strong>أنت</strong> — ' + z.me.kills + ' قتيل — ' + (z.me.fin ? 'وصلت' : 'وقعت')].concat(z.mates.map(t => esc(t.name) + ' — ' + t.kills + ' قتيل — ' + st(t))).join('<br>');
+    const st = t => t.fin ? 'وصل' : (t.dead ? 'مات' : (t.down ? 'وقع' : (t.gone ? 'خرج' : 'لسه بيجري')));
+    html += '<br>' + ['<strong>أنت</strong> — ' + z.me.kills + ' قتيل — ' + (z.me.fin ? 'وصلت' : 'مت')].concat(z.mates.map(t => esc(t.name) + ' — ' + t.kills + ' قتيل — ' + st(t))).join('<br>');
   }
   const done = z.me.fin;
   showOverlay(z.coop ? (done ? 'وصلت مع الفريق!' : 'الفريق وقع') : (z.won ? 'نجوت!' : 'الزومبي مسكوك'), html, z.coop ? 'جولة تانية' : 'العب تاني', true);
 }
 
 /* --- drawing --- */
-function drawZPlat(p, i, sx){
+function drawZPlat(p, sx){
   if(sx > W + 40 || sx + p.w < -40) return;
   const y = ground - p.top;
   ctx.save();
@@ -3355,92 +3629,154 @@ function drawZPlat(p, i, sx){
   ctx.fillStyle = C.paper; ctx.fillRect(sx, y, p.w, 10);
   ctx.globalAlpha = .35; ctx.fillStyle = C.marker; ctx.fillRect(sx, y, p.w, 10); ctx.globalAlpha = 1;
   ctx.strokeRect(sx, y, p.w, 10);
-  if(p.kit && !zs.taken.has(i)){
-    const cx = sx + p.w / 2, ky = y - 24 + Math.sin(T * 3) * 2;
-    ctx.fillStyle = C.paper; ctx.fillRect(cx - 10, ky, 20, 16); ctx.strokeRect(cx - 10, ky, 20, 16);
-    ctx.fillStyle = C.pencil; ctx.fillRect(cx - 2.5, ky + 2, 5, 12); ctx.fillRect(cx - 7, ky + 6, 14, 4);
+  ctx.restore();
+}
+function drawZItem(it, sx, yo){
+  const y = yo !== undefined ? yo : ground - it.h - 24 + Math.sin(T * 3 + it.i) * 2;
+  ctx.save();
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.lineWidth = 2.5; ctx.strokeStyle = C.ink; ctx.fillStyle = C.paper;
+  if(it.type === 'med'){
+    ctx.fillRect(sx - 10, y, 20, 16); ctx.strokeRect(sx - 10, y, 20, 16);
+    ctx.fillStyle = C.pencil; ctx.fillRect(sx - 2.5, y + 2, 5, 12); ctx.fillRect(sx - 7, y + 6, 14, 4);
+  }else if(it.type === 'bomb'){
+    ctx.fillStyle = C.ink; ctx.beginPath(); ctx.arc(sx, y + 10, 9, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(sx + 4, y + 2); ctx.quadraticCurveTo(sx + 9, y - 6, sx + 13, y - 2); ctx.stroke();
+    ctx.fillStyle = (Math.floor(T * 12) % 2) ? C.marker : C.pencil; ctx.beginPath(); ctx.arc(sx + 13, y - 2, 3, 0, Math.PI * 2); ctx.fill();
+  }else{
+    ctx.lineWidth = 4; ctx.strokeStyle = C.ink; ctx.beginPath(); ctx.moveTo(sx - 12, y + 18); ctx.lineTo(sx + 13, y - 2); ctx.stroke();
+    ctx.lineWidth = 2.5; ctx.strokeStyle = C.paper; ctx.beginPath(); ctx.moveTo(sx - 10, y + 17); ctx.lineTo(sx + 12, y - 1); ctx.stroke();
+    ctx.strokeStyle = C.pencil; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(sx - 14, y + 20); ctx.lineTo(sx - 8, y + 15); ctx.stroke();
   }
   ctx.restore();
 }
 
-function drawZombie(e, sx){
+function drawZombie(e, sx, lying){
   const Ty = ZTYPES[e.ty], s = Ty.h / 62;
   ctx.save();
-  ctx.translate(sx, ground); ctx.scale(e.dir, 1);
-  ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = e.ty === 2 ? 7 : 5;
+  ctx.translate(sx, ground - (lying ? 5 : 0));
+  if(lying) ctx.rotate(-e.dir * Math.PI / 2);
+  ctx.scale(e.dir, 1);
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.lineWidth = e.ty === 3 ? 10 : (e.ty === 2 ? 7 : 5);
   ctx.strokeStyle = e.flash > 0 ? C.pencil : Ty.col;
-  const hip = [0, -30 * s], neck = [3 * s, -54 * s], sw = Math.sin(e.phase) * 14 * s, bob = Math.sin(e.phase * .7) * 3;
+  const sway = lying ? 0 : 1;
+  const hip = [0, -30 * s], neck = [3 * s, -54 * s], sw = Math.sin(e.phase) * 14 * s * sway, bob = Math.sin(e.phase * .7) * 3 * sway;
   limb(neck, hip);
   limb(hip, [sw * .5 + 4, -14 * s], [sw, 0]); limb(hip, [-sw * .5 + 4, -14 * s], [-sw, 0]);
   limb([2 * s, -48 * s], [16 * s, -50 * s], [30 * s, -47 * s + bob]);
   limb([2 * s, -44 * s], [14 * s, -44 * s], [26 * s, -40 * s - bob]);
   ctx.fillStyle = C.paper; ctx.beginPath(); ctx.arc(6 * s, -63 * s, 9 * s, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-  ctx.strokeStyle = e.ty === 1 ? C.pencil : C.ink; ctx.lineWidth = 2;
-  const ex = 9 * s, ey = -65 * s;
-  ctx.beginPath(); ctx.moveTo(ex - 2.5, ey - 2.5); ctx.lineTo(ex + 2.5, ey + 2.5); ctx.moveTo(ex + 2.5, ey - 2.5); ctx.lineTo(ex - 2.5, ey + 2.5);
+  ctx.strokeStyle = (e.ty === 1 || e.ty === 3) ? C.pencil : C.ink; ctx.lineWidth = e.ty === 3 ? 4 : 2;
+  const ex = 9 * s, ey = -65 * s, q = e.ty === 3 ? 4 : 2.5;
+  ctx.beginPath(); ctx.moveTo(ex - q, ey - q); ctx.lineTo(ex + q, ey + q); ctx.moveTo(ex + q, ey - q); ctx.lineTo(ex - q, ey + q);
   ctx.moveTo(4 * s, -59 * s); ctx.lineTo(11 * s, -59 * s); ctx.stroke();
   ctx.restore();
-  if(e.ty === 2 && e.hp < Ty.hp){
+  if(!lying && e.ty === 2 && e.hp < (e.mh || Ty.hp)){
     ctx.save();
     ctx.fillStyle = C.paper; ctx.fillRect(sx - 18, ground - Ty.h - 16, 36, 6);
-    ctx.fillStyle = C.pencil; ctx.fillRect(sx - 18, ground - Ty.h - 16, 36 * e.hp / Ty.hp, 6);
+    ctx.fillStyle = C.pencil; ctx.fillRect(sx - 18, ground - Ty.h - 16, 36 * e.hp / (e.mh || Ty.hp), 6);
     ctx.strokeStyle = C.ink; ctx.lineWidth = 1.5; ctx.strokeRect(sx - 18, ground - Ty.h - 16, 36, 6);
     ctx.restore();
   }
 }
 
-// a player (me or a teammate), facing the way they're going, with the gun
+// a player (me or a teammate), facing the way they're going, with the gun (and the katana on their back)
 function zRunner(info, sx, alpha){
-  const P = { h:info.h, on:info.on, sliding:false, phase:info.phase, rot:0, lying:info.down, fwd:false, sleep:false };
+  const P = { h:info.h, on:info.on, sliding:false, phase:info.phase, rot:0, lying:info.down, fwd:info.face > 0, sleep:false };
   const fig = { P, dead:info.down, invuln:info.inv, kickT:0, slowT:0, grabbing:false, skin:info.skin, elapsed:99, remote:true };
   ctx.save();
   ctx.globalAlpha = alpha;
   ctx.translate(sx, 0); ctx.scale(info.face, 1); ctx.translate(-PX, 0);
   drawFigure(fig, skinOf(fig).band || C.pencil);
   if(!info.down){
+    if(info.kat){ ctx.save(); ctx.lineCap = 'round'; ctx.strokeStyle = C.ink; ctx.lineWidth = 3; const y0 = ground - info.h; ctx.beginPath(); ctx.moveTo(PX - 4, y0 - 58); ctx.lineTo(PX - 24, y0 - 10); ctx.stroke(); ctx.strokeStyle = C.pencil; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(PX - 3, y0 - 60); ctx.lineTo(PX - 7, y0 - 52); ctx.stroke(); ctx.restore(); }
+    ctx.save();
     ctx.translate(PX + 4, ground - info.h - 44); ctx.rotate(-info.aim);
     ctx.fillStyle = C.ink; ctx.fillRect(0, -3, 24, 6); ctx.fillRect(2, 3, 6, 9);
     if(info.flash > 0){ ctx.fillStyle = C.marker; ctx.beginPath(); ctx.moveTo(26, 0); ctx.lineTo(38, -6); ctx.lineTo(34, 0); ctx.lineTo(38, 6); ctx.closePath(); ctx.fill(); }
+    ctx.restore();
+  }
+  if(info.slash){                                   // the katana sweeping through the air
+    ctx.save();
+    ctx.translate(PX, ground - info.h - 42);
+    ctx.strokeStyle = C.paper; ctx.lineWidth = 7; ctx.lineCap = 'round'; ctx.globalAlpha *= .9;
+    ctx.beginPath(); ctx.arc(0, 0, ZKAT_RANGE * .8, -1.1, .5); ctx.stroke();
+    ctx.strokeStyle = C.ink; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(0, 0, ZKAT_RANGE * .8, -1.1, .5); ctx.stroke();
+    ctx.restore();
   }
   ctx.restore();
 }
 
 function drawZombieScene(){
-  const z = zs, m = z.me, cam = m.wx, X = x => W / 2 + (x - cam), now = performance.now();
+  const z = zs, m = z.me, now = performance.now();
+  // when you're out for good you watch from beside whoever is still going
+  let camT = null;
+  if(m.dead) camT = z.mates.filter(t => !t.gone && !t.dead && t.tx !== undefined)[0];
+  const cam = camT ? camT.wx : m.wx, X = x => W / 2 + (x - cam);
   drawBackground({ scroll:cam });
   drawFinish({ scroll:cam - (W / 2 - PX) });
-  z.plats.forEach((p, i) => drawZPlat(p, i, X(p.x)));
+  z.plats.forEach(p => drawZPlat(p, X(p.x)));
+  for(const it of z.items) if(!z.taken.has(it.i)){ const sx = X(it.x); if(sx > -30 && sx < W + 30) drawZItem(it, sx); }
+  // zombies that just died stay on the ground for a moment
+  for(const c of z.corpses){
+    const sx = X(c.x);
+    if(sx < -80 || sx > W + 80) continue;
+    ctx.save(); ctx.globalAlpha = Math.min(1, c.t / .8) * .8;
+    drawZombie({ ty:c.ty, dir:c.dir, phase:c.phase, hp:0, flash:0 }, sx, true);
+    ctx.restore();
+  }
   const edge = { l:0, r:0 };
   for(const e of z.zombies){
     const sx = X(e.x);
-    if(sx < -40){ if(sx > -760) edge.l++; continue; }
-    if(sx > W + 40){ if(sx < W + 760) edge.r++; continue; }
-    drawZombie(e, sx);
+    if(sx < -60){ if(sx > -760) edge.l++; continue; }
+    if(sx > W + 60){ if(sx < W + 760) edge.r++; continue; }
+    drawZombie(e, sx, false);
   }
+  // bullets, bombs and blasts
   ctx.save();
   ctx.strokeStyle = C.marker; ctx.lineWidth = 3; ctx.lineCap = 'round';
   const line = (x, h, vx, vy) => { const sx = X(x), y = ground - h, L = Math.hypot(vx, vy) || 1; ctx.beginPath(); ctx.moveTo(sx, y); ctx.lineTo(sx - vx / L * 16, y + vy / L * 16); ctx.stroke(); };
   for(const b of z.bullets) line(b.x, b.h, b.vx, b.vy);
   for(const t of z.mates){ const age = Math.min(.3, (now - t.buT) / 1000); for(const b of t.bu) line(b[0] + b[2] * age, b[1] + b[3] * age, b[2], b[3]); }
   ctx.restore();
+  const bomb = (x, h) => { const sx = X(x), y = ground - h; ctx.save(); ctx.fillStyle = C.ink; ctx.beginPath(); ctx.arc(sx, y, 8, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = (Math.floor(T * 14) % 2) ? C.marker : C.pencil; ctx.beginPath(); ctx.arc(sx + 6, y - 9, 3, 0, Math.PI * 2); ctx.fill(); ctx.restore(); };
+  for(const b of z.bombs) bomb(b.x, b.h);
+  for(const t of z.mates) for(const b of t.bm) bomb(b[0], b[1]);
+  for(const f of z.fx){
+    const sx = X(f.x), y = ground - f.h, k = 1 - f.t / .45;
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, 1 - k);
+    ctx.fillStyle = C.marker; ctx.beginPath(); ctx.arc(sx, y, ZBOMB_R * (.3 + .7 * k), 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = C.pencil; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(sx, y, ZBOMB_R * (.35 + .75 * k), 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+  }
   // teammates (a little see-through), then me
   z.mates.forEach((t, i) => {
     if(t.gone || t.tx === undefined) return;
     const sx = X(t.wx);
     if(sx < -60 || sx > W + 60) return;
-    zRunner({ h:t.h, on:t.on, phase:t.phase, down:t.down, inv:t.inv, skin:t.skin, face:t.face, aim:t.aim, flash:t.flash }, sx, .75);
+    zRunner({ h:t.h, on:t.on, phase:t.phase, down:t.down, inv:t.inv, skin:t.skin, face:t.face, aim:t.aim, flash:t.flash, kat:t.kt, slash:t.sl }, sx, t.dead ? .35 : .75);
     ctx.save();
     ctx.font = '700 14px "Cairo", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = C.ink; ctx.globalAlpha = .9;
     ctx.fillText(t.name, sx, Math.max(16, ground - t.h - 96));
-    ctx.fillStyle = C.paper; ctx.fillRect(sx - 18, ground - t.h - 90, 36, 5);
-    ctx.fillStyle = C.bands[(i + 1) % 6]; ctx.fillRect(sx - 18, ground - t.h - 90, 36 * Math.max(0, t.hp) / ZHP, 5);
-    ctx.strokeStyle = C.ink; ctx.lineWidth = 1.5; ctx.strokeRect(sx - 18, ground - t.h - 90, 36, 5);
+    if(t.down && !t.dead){
+      ctx.fillStyle = C.pencil; ctx.fillText(Math.max(0, Math.ceil(t.dt)) + ' ث', sx, ground - 34);
+      const near = Math.abs(t.wx - m.wx) < ZREV_RANGE;
+      ctx.strokeStyle = C.ink; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(sx, ground - 70, 15, 0, Math.PI * 2); ctx.stroke();
+      ctx.strokeStyle = C.good || '#2E9E5B'; ctx.lineWidth = 5; ctx.beginPath(); ctx.arc(sx, ground - 70, 15, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, t.revT / ZREV_NEED)); ctx.stroke();
+      ctx.fillStyle = C.ink; ctx.font = '700 12px "Cairo", sans-serif'; ctx.fillText(near ? 'استنى...' : 'قرّب منه', sx, ground - 94);
+    }else if(!t.dead){
+      ctx.fillStyle = C.paper; ctx.fillRect(sx - 18, ground - t.h - 90, 36, 5);
+      ctx.fillStyle = C.bands[(i + 1) % 6]; ctx.fillRect(sx - 18, ground - t.h - 90, 36 * Math.max(0, t.hp) / ZHP, 5);
+      ctx.strokeStyle = C.ink; ctx.lineWidth = 1.5; ctx.strokeRect(sx - 18, ground - t.h - 90, 36, 5);
+    }
     ctx.restore();
   });
-  zRunner({ h:m.h, on:m.on, phase:m.phase, down:m.down, inv:m.inv, skin:pw.skin, face:m.face, aim:m.aimA, flash:m.flash }, W / 2, 1);
-  ctx.save();
-  ctx.translate(W / 2 - PX, 0); drawPop({ dead:m.down, P:{ h:m.h }, combo:0, pop:pw.pop });
-  ctx.restore();
+  if(!camT){
+    zRunner({ h:m.h, on:m.on, phase:m.phase, down:m.down, inv:m.inv, skin:pw.skin, face:m.face, aim:m.aimA, flash:m.flash, kat:m.kat, slash:m.slashT > 0 }, W / 2, m.dead ? .4 : 1);
+    ctx.save();
+    ctx.translate(W / 2 - PX, 0); drawPop({ dead:m.down, P:{ h:m.h }, combo:0, pop:pw.pop });
+    ctx.restore();
+  }
   // warnings for the ones about to arrive from off screen
   ctx.save();
   ctx.font = '700 15px "Cairo", sans-serif'; ctx.textAlign = 'center'; ctx.lineJoin = 'round'; ctx.lineWidth = 3; ctx.strokeStyle = C.ink;
@@ -3453,12 +3789,53 @@ function drawZombieScene(){
     ctx.fillStyle = C.ink; ctx.fillText(String(n), ex - d * 2, ey - 20);
   }
   ctx.restore();
-  ctx.save(); ctx.font = '700 16px "Cairo", sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = C.ink; ctx.lineJoin = 'round'; ctx.lineWidth = 4; ctx.strokeStyle = C.paper;
-  if(m.reload > 0) ctx.fillText('تعبئة...', W / 2, ground - m.h - 100);
+  drawZHud(z, m, cam);
+}
+
+function drawZHud(z, m, cam){
+  const top = compact ? 52 : 12;
+  ctx.save();
+  ctx.font = '700 15px "Cairo", sans-serif'; ctx.lineJoin = 'round'; ctx.lineWidth = 4; ctx.strokeStyle = C.paper;
+  const txt = (t, x, y, col, al) => { ctx.textAlign = al || 'center'; ctx.strokeText(t, x, y); ctx.fillStyle = col || C.ink; ctx.fillText(t, x, y); };
+  // what I'm carrying
+  const inv = [['med', m.meds + '/1'], ['bomb', m.bombs + '/' + ZBOMB_MAX], ['katana', String(m.kat)]];
+  if(z.coop) inv.push(['life', String(Math.max(0, ZREV_MAX - m.revives))]);
+  let x = W - 14;
+  for(const [k, v] of inv.slice().reverse()){
+    ctx.textAlign = 'right'; txt(v, x, top + 14, C.ink, 'right'); x -= ctx.measureText(v).width + 8;
+    ctx.save(); ctx.translate(x - 8, top + 6); ctx.scale(.8, .8); drawZItem({ type:k === 'life' ? 'med' : k, i:0, h:0 }, 0, 0); ctx.restore();
+    x -= 34;
+  }
+  // how far to the next wave (and the boss)
+  const nextWave = Math.floor(m.wx / ZWAVE_GAP) * ZWAVE_GAP + ZWAVE_GAP;
   let note = '';
-  if(z.coop && m.fin && !z.over) note = 'وصلت! استنى زمايلك يوصلوا';
-  else if(z.coop && m.down && !z.over) note = 'وقعت... زميلك هيرجّعك بعد ' + Math.max(0, Math.ceil(m.downT)) + ' ث';
-  if(note){ ctx.strokeText(note, W / 2, HT * .25); ctx.fillText(note, W / 2, HT * .25); }
+  if(z.wave) note = 'موجة زومبي شغالة!';
+  else if(m.wx >= z.fin - ZWAVE_GAP) note = 'الوحش الكبير قدامك!';
+  else if(nextWave >= z.fin - ZWAVE_GAP) note = 'الوحش الكبير بعد ' + Math.max(0, Math.round((z.fin - ZWAVE_GAP - m.wx) / 50)) + ' م';
+  else note = 'الموجة الجاية بعد ' + Math.max(0, Math.round((nextWave - m.wx) / 50)) + ' م';
+  txt(note, 14, top + 14, z.wave ? C.pencil : C.ink, 'left');
+  // the boss's health
+  const boss = z.zombies.find(e => e.ty === 3);
+  if(boss){
+    const bw = 260, bx = W / 2 - bw / 2, by = top + 26;
+    ctx.fillStyle = C.paper; ctx.fillRect(bx, by, bw, 12);
+    ctx.fillStyle = C.pencil; ctx.fillRect(bx, by, bw * Math.max(0, boss.hp) / (boss.mh || ZTYPES[3].hp), 12);
+    ctx.strokeStyle = C.ink; ctx.lineWidth = 2.5; ctx.strokeRect(bx, by, bw, 12);
+  }
+  // a low-health glow around the edges
+  if(!m.dead && m.hp < 35){
+    const g = ctx.createRadialGradient(W / 2, HT / 2, HT * .35, W / 2, HT / 2, HT * .9);
+    g.addColorStop(0, 'rgba(200,30,30,0)'); g.addColorStop(1, 'rgba(200,30,30,' + (.45 * (1 - m.hp / 35) * (.7 + .3 * Math.sin(T * 6))).toFixed(3) + ')');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, HT);
+  }
+  // messages
+  let msg = '';
+  if(z.banner) txt(z.banner.text, W / 2, HT * .3, C.pencil);
+  if(m.reload > 0) txt('تعبئة...', W / 2, ground - m.h - 100, C.ink);
+  if(m.dead && !z.over) msg = 'مت... بتتفرج على الفريق';
+  else if(m.down) msg = m.revIn > 0 ? 'زميلك بيقومك ' + Math.round(m.revIn * ZREV_NEED * 10) / 10 + ' / ' + ZREV_NEED + ' ث' : 'وقعت! عندك ' + Math.max(0, Math.ceil(m.downT)) + ' ث لحد ما حد يقومك (تقدر تضرب بس أبطأ)';
+  else if(z.coop && m.fin && !z.over) msg = 'وصلت! استنى زمايلك يوصلوا';
+  if(msg){ ctx.font = '700 17px "Cairo", sans-serif'; txt(msg, W / 2, HT * .2, C.ink); }
   ctx.restore();
 }
 
