@@ -3021,17 +3021,19 @@ function frame(now){
 
 
 /* ---------- zombie mode: shoot your way to the end of the road (alone, or together in an online room) ---------- */
-const ZW = 250, ZHP = 100, ZMAG = 12, ZRELOAD = 1.1, ZFIRE_CD = .2, ZDOWN_CD = .75, ZBUL_V = 1150, ZBUL_LIFE = .6, ZHIT_CD = 1, ZSAFE = 4;
+const ZW = 250, ZHP = 100, ZMAG = 20, ZRELOAD = .9, ZFIRE_CD = .16, ZDOWN_CD = .6, ZBUL_V = 1150, ZBUL_LIFE = .6, ZHIT_CD = 1, ZSAFE = 4;
 const ZWAVE_GAP = 5000;                                  // a big wave every 100 m, and the boss in the last 100 m
 const ZDOWN_TIME = 30, ZREV_NEED = 5, ZREV_MAX = 2, ZREV_RANGE = 70;   // 30 s to be picked up, 5 s of a mate standing by you, twice per run
 const ZBOMB_MAX = 3, ZBOMB_R = 135, ZBOMB_DMG = 8, ZKAT_USES = 15, ZKAT_RANGE = 135, ZKAT_CD = .45, ZKAT_DMG = 3, ZMED_HEAL = 45;
 // walkers are slow, runners fast and fragile, tanks slow and tough, and one huge boss at the end
 const ZTYPES = [
-  { sp:78,  hp:2,  dmg:14, pts:10,  w:13, h:62,  col:'#5E9B4A' },
-  { sp:170, hp:1,  dmg:10, pts:15,  w:12, h:58,  col:'#9ACB3A' },
-  { sp:54,  hp:7,  dmg:30, pts:50,  w:19, h:84,  col:'#3F7A3A' },
-  { sp:42,  hp:60, dmg:35, pts:500, w:36, h:150, col:'#2E5A2B' }
+  { sp:105, hp:2,  dmg:16, pts:10,  w:13, h:62,  col:'#5E9B4A' },
+  { sp:240, hp:1,  dmg:10, pts:15,  w:12, h:58,  col:'#9ACB3A' },
+  { sp:75,  hp:7,  dmg:30, pts:50,  w:19, h:84,  col:'#3F7A3A' },
+  { sp:68,  hp:60, dmg:35, pts:500, w:36, h:150, col:'#2E5A2B', ranged:1 },
+  { sp:88,  hp:3,  dmg:10, pts:25,  w:13, h:62,  col:'#8C5BA8', ranged:1 }          // the thrower: keeps its distance and flings things at you
 ];
+const ZTHROW_RANGE = 470, ZTHROW_KEEP = 300;
 let zOn = false, zs = null, fireHeld = false, zUiOn = null;
 const zUi = () => mode === 'zombie' || zOn;
 const zBest = n => parseInt(load('stickrun:zbest:' + n, '0'), 10) || 0;
@@ -3056,7 +3058,7 @@ function zItems(seed, fin, plats){
   plats.forEach(p => { if(p.kit) items.push({ x:p.x + p.w / 2, h:p.top, type:kind() }); });
   for(let x = ZWAVE_GAP; x < fin; x += ZWAVE_GAP){
     items.push({ x:x - 760, h:0, type:'bomb' }, { x:x - 700, h:0, type:'med' });
-    if(((x / ZWAVE_GAP) | 0) % 2 === 0) items.push({ x:x - 640, h:0, type:'katana' });
+    items.push({ x:x - 640, h:0, type:'katana' }, { x:x - 580, h:0, type:'bomb' });
   }
   return items.map((it, i) => Object.assign(it, { i }));
 }
@@ -3179,12 +3181,12 @@ function zNewMate(p){
 function zBegin(o){
   o = o || {};
   const seed = o.seed !== undefined ? o.seed >>> 0 : (Math.random() * 4294967296) >>> 0, fin = (o.len || raceM) * 50, plats = zPlatforms(seed, fin);
-  zs = { fin, t:0, coop:!!o.coop, run:o.run || null, myId:(o.coop && acct.id) ? acct.id : 'me', plats, items:zItems(seed, fin, plats), taken:new Set(), zombies:[], bullets:[], bombs:[], fx:[], corpses:[], nextId:1, bid:0,
+  zs = { fin, t:0, coop:!!o.coop, run:o.run || null, myId:(o.coop && acct.id) ? acct.id : 'me', plats, items:zItems(seed, fin, plats), taken:new Set(), zombies:[], bullets:[], bombs:[], fx:[], corpses:[], proj:[], pid:1, pHit:new Set(), nextId:1, bid:0,
          spawnT:ZSAFE, rng:mulberry32((Math.random() * 4294967296) >>> 0), over:false, won:false, ended:false, counted:new Set(), recentKills:[], lastSend:0, lastSnap:0,
          wave:null, wavesDone:new Set(), calmT:0, bossDone:false, wv:0, lastWv:0, bossSeen:false, banner:null, groanT:1,
          mates:o.mates || [],
          me:{ wx:0, h:0, vy:0, on:true, jumps:2, face:1, hp:ZHP, inv:ZSAFE - 1, ammo:ZMAG, reload:0, cd:0, kills:0, down:false, dead:false, downT:0, dropT:0, phase:0, flash:0, aimA:0, fin:false,
-              bombs:0, meds:0, kat:0, kcd:0, slashT:0, bcd:0, revives:0, revIn:0 } };
+              bombs:0, meds:0, kat:0, kcd:0, slashT:0, bcd:0, revives:0, revIn:0, slow:0 } };
   zOn = true;
   zApplyUi();
   Object.assign(pw, { scroll:0, dist:0, coinCount:0, energy:100, ammo:ZMAG, score:0, pop:null });
@@ -3266,7 +3268,7 @@ function zSendSnap(){
   if(!z.coop || !net.chan || !net.connected || now - z.lastSnap < 100) return;
   z.lastSnap = now;
   z.recentKills = z.recentKills.filter(k => z.t - k[3] < 4);
-  try{ net.chan.send({ type:'broadcast', event:'z', payload:{ u:z.myId, wv:z.wv, z:z.zombies.map(e => [e.id, e.ty, Math.round(e.x), e.hp, e.dir, e.mv ? 1 : 0, e.mh || 0]), ks:z.recentKills.map(k => [k[0], k[1], k[2]]) } }); }catch(e){}
+  try{ net.chan.send({ type:'broadcast', event:'z', payload:{ u:z.myId, wv:z.wv, z:z.zombies.map(e => [e.id, e.ty, Math.round(e.x), e.hp, e.dir, e.mv ? 1 : 0, e.mh || 0, e.th > 0 ? 1 : 0]), pj:z.proj.map(q => [q.id, Math.round(q.x), Math.round(q.h), Math.round(q.vx), Math.round(q.vy), q.dmg]), ks:z.recentKills.map(k => [k[0], k[1], k[2]]) } }); }catch(e){}
 }
 function zOnSnap(p){
   const z = zs;
@@ -3276,12 +3278,13 @@ function zOnSnap(p){
     const id = a[0];
     let e = keep.get(id);
     if(!e) e = { id, ty:a[1], x:a[2], hp:a[3], dir:a[4], spd:1, flash:0, phase:Math.random() * 6 };
-    e.hp = a[3]; e.dir = a[4]; e.mv = a[5]; e.mh = a[6] || ZTYPES[e.ty].hp; e.xs = a[2]; e.sT = now;
+    e.hp = a[3]; e.dir = a[4]; e.mv = a[5]; e.mh = a[6] || ZTYPES[e.ty].hp; e.th = a[7] ? .3 : 0; e.xs = a[2]; e.sT = now;
     out.push(e); seen.add(id);
     if(z.nextId <= id) z.nextId = id + 1;
   }
   for(const e of z.zombies) if(!seen.has(e.id) && (p.ks || []).some(k => k[0] === e.id)) zCorpse(e);        // killed by a teammate
   z.zombies = out; z.wv = p.wv | 0;
+  z.proj = (p.pj || []).map(a => ({ id:a[0], x:a[1], h:a[2], vx:a[3], vy:a[4], dmg:a[5], t:2 }));
   for(const k of (p.ks || [])) if(k[1] === z.myId && !z.counted.has(k[0])){ z.counted.add(k[0]); zKill(k[2]); }
 }
 function zOnHit(p){
@@ -3388,7 +3391,7 @@ function zExplode(b){
 
 function zHurt(d, fromX){
   const m = zs.me;
-  m.hp -= d; m.inv = ZHIT_CD; pw.shake = reduceMotion ? 0 : .5;
+  m.hp -= d; m.inv = ZHIT_CD; m.slow = .8; pw.shake = reduceMotion ? 0 : .5;
   m.wx = Math.max(0, m.wx + (m.wx >= fromX ? 1 : -1) * 35);
   beep(170, 70, .2, 'sawtooth', .06);
   if(m.hp <= 0){
@@ -3405,22 +3408,25 @@ function zHurtDown(){
 
 /* --- the zombies (run by the host) --- */
 function zType(prog, k){
-  const r = zs.rng;
-  return r() < Math.min(.22, .05 + .12 * prog + .01 * k) ? 2 : (r() < Math.min(.5, .3 + .25 * prog) ? 1 : 0);
+  const r = zs.rng, q = r();
+  const tank = Math.min(.25, .06 + .12 * prog + .012 * k), thr = Math.min(.2, .04 + .1 * prog + .008 * k);
+  if(q < tank) return 2;
+  if(q < tank + thr) return 4;
+  return r() < Math.min(.5, .3 + .25 * prog + .01 * k) ? 1 : 0;
 }
-function zSpawnAt(anchors, ty, front){
+function zSpawnAt(anchors, ty, front, rage){
   const z = zs, r = z.rng;
   const lead = Math.max(...anchors.map(p => p.wx)), tail = Math.min(...anchors.map(p => p.wx));
   const f = front || tail <= 400;
   const x = f ? Math.min(z.fin + 250, lead + W / 2 + 70 + r() * 320) : tail - W / 2 - 70 - r() * 320;
   const hp = ty === 3 ? ZTYPES[3].hp + 25 * (zPlayers().length - 1) : ZTYPES[ty].hp;
-  z.zombies.push({ id:z.nextId++, ty, x, hp, mh:hp, dir:f ? -1 : 1, spd:ty === 3 ? 1 : .9 + r() * .25, flash:0, phase:r() * 6, mv:1 });
+  z.zombies.push({ id:z.nextId++, ty, x, hp, mh:hp, dir:f ? -1 : 1, spd:(ty === 3 ? 1 : (ty === 1 ? .9 + r() * .2 : .95 + r() * .25)) * (rage ? 1.12 : 1), flash:0, phase:r() * 6, mv:1, cd:1 + r() * 2, th:0 });
 }
 function zSpawn(anchors, n, mult){
   const z = zs, r = z.rng;
   const lead = Math.max(...anchors.map(p => p.wx)), prog = Math.min(1, lead / z.fin);
-  z.spawnT = Math.max(.7, 1.9 - prog * 1.2) / (1 + .45 * (n - 1)) * mult;
-  const k = r() < .25 ? 2 : 1;
+  z.spawnT = Math.max(.45, 1.35 - prog * 1.0) / (1 + .45 * (n - 1)) * mult;
+  const k = r() < .3 ? 3 : (r() < .5 ? 2 : 1);
   for(let i = 0; i < k; i++) zSpawnAt(anchors, zType(prog, 0), r() < .55);
 }
 function zWaves(h, anchors, n, anyDown){
@@ -3429,14 +3435,14 @@ function zWaves(h, anchors, n, anyDown){
   const lead = Math.max(...anchors.map(p => p.wx));
   if(z.wave){
     const w = z.wave; w.t += h; w.acc += h;
-    while(w.acc >= .13 && w.left > 0){ w.acc -= .13; w.left--; zSpawnAt(anchors, zType(Math.min(1, lead / z.fin), w.k), (w.left % 2) === 0); }
-    if((w.left <= 0 && z.zombies.length <= 3) || w.t > 50){ z.wave = null; z.calmT = 14; z.spawnT = 5; }
+    while(w.acc >= .05 && w.left > 0){ w.acc -= .05; w.left--; zSpawnAt(anchors, zType(Math.min(1, lead / z.fin), w.k), (w.left % 2) === 0, true); }
+    if((w.left <= 0 && z.zombies.length <= 4) || w.t > 60){ z.wave = null; z.calmT = 10; z.spawnT = 4; }
     return;
   }
   const k = z.wavesDone.size + 1;
   if(k * ZWAVE_GAP < z.fin - ZWAVE_GAP && lead >= k * ZWAVE_GAP && !anyDown){                 // no new wave while somebody is waiting to be picked up
     z.wavesDone.add(k);
-    z.wave = { k, left:Math.min(60, Math.round((12 + 5 * k) * (1 + .5 * (n - 1)))), t:0, acc:0 };
+    z.wave = { k, left:Math.min(150, Math.round((22 + 12 * k) * (1 + .6 * (n - 1)))), t:0, acc:0 };
   }
   if(!z.bossDone && lead >= z.fin - ZWAVE_GAP && z.fin > ZWAVE_GAP){                         // the last 100 m: the big one
     z.bossDone = true;
@@ -3449,9 +3455,13 @@ function zSim(h, players){
   const anchors = standing.length ? standing : alive;
   zWaves(h, anchors, players.length, anyDown);
   z.wv = z.wave ? z.wave.k : 0;
+  if(z.zombies.some(e => e.ty === 3 && e.hp > 0) && anchors.length){                          // while the boss lives it keeps calling more
+    z.bossT = (z.bossT === undefined ? 4 : z.bossT) - h;
+    if(z.bossT <= 0){ z.bossT = 7; for(let i = 0; i < 4; i++) zSpawnAt(anchors, zType(1, 8), i % 2 === 0, true); }
+  }
   z.spawnT -= h;
   if(z.calmT > 0) z.calmT -= h;
-  const cap = z.wave ? 70 : Math.round((16 + 5 * (players.length - 1)) * (anyDown ? .5 : 1));
+  const cap = z.wave ? 130 : Math.round((24 + 7 * (players.length - 1)) * (anyDown ? .5 : 1));
   if(!z.wave && z.spawnT <= 0 && z.zombies.length < cap && anchors.length) zSpawn(anchors, players.length, anyDown ? 2.2 : (z.calmT > 0 ? 2.8 : 1));
   for(const e of z.zombies){
     if(e.flash > 0) e.flash -= h;
@@ -3459,11 +3469,24 @@ function zSim(h, players){
     let tgt = null, bd = 1e9;
     for(const p of alive){ const d = Math.abs(p.wx - e.x); if(d < bd){ bd = d; tgt = p; } }       // they go for whoever is closest, down or not
     e.mv = 0;
+    if(e.th > 0) e.th -= h;
     if(!tgt) continue;
     const dx = tgt.wx - e.x;
     e.dir = dx >= 0 ? 1 : -1;
+    if(Ty.ranged){                                                  // throwers and the boss fling things from a distance
+      e.cd -= h;
+      if(Math.abs(dx) < ZTHROW_RANGE && e.cd <= 0){
+        const x0 = e.x + e.dir * 14 * (Ty.h / 62), h0 = Ty.h * .72, sp = e.ty === 3 ? 390 : 430;
+        const ex = tgt.wx - x0, ey = tgt.h + 36 - h0, L = Math.hypot(ex, ey) || 1;
+        z.proj.push({ id:z.pid++, x:x0, h:h0, vx:ex / L * sp, vy:ey / L * sp, t:2.6, dmg:e.ty === 3 ? 30 : 14 });
+        e.cd = e.ty === 3 ? 2.4 : 1.4 + z.rng() * 1.0; e.th = .3;
+      }
+      if(e.ty !== 3 && Math.abs(dx) < ZTHROW_KEEP) continue;      // a thrower stops once it is close enough
+    }
     if(Math.abs(dx) > 10 && !(tgt.h > 70 && Math.abs(dx) < 16)){ e.x += e.dir * Ty.sp * e.spd * h; e.phase += h * Ty.sp * .05; e.mv = 1; }   // under a platform they just stand there
   }
+  for(const q of z.proj){ q.x += q.vx * h; q.h += q.vy * h; q.t -= h; }
+  z.proj = z.proj.filter(q => q.t > 0 && q.h > -10);
   zReap(alive.length ? alive : null);
 }
 // everybody else just follows the host's snapshots
@@ -3477,7 +3500,10 @@ function zFollow(h){
       e.x += (e.xs + e.dir * (e.mv ? 1 : 0) * Ty.sp * age - e.x) * Math.min(1, h * 14);
     }
     if(e.mv) e.phase += h * Ty.sp * .05;
+    if(e.th > 0) e.th -= h;
   }
+  for(const q of z.proj){ q.x += q.vx * h; q.h += q.vy * h; q.t -= h; }
+  z.proj = z.proj.filter(q => q.t > 0 && q.h > -10);
   zReap(null);
 }
 
@@ -3491,9 +3517,10 @@ function zTick(h){
   if(m.slashT > 0) m.slashT -= h;
   if(m.kcd > 0) m.kcd -= h;
   if(m.bcd > 0) m.bcd -= h;
+  if(m.slow > 0) m.slow -= h;
   if(!m.down && !m.fin){
     const dir = (boostHeld ? 1 : 0) - (chargeHeld ? 1 : 0);
-    const spd = ZW * (.55 + .45 * m.hp / ZHP);                    // the lower your health the slower you walk
+    const spd = ZW * (.55 + .45 * m.hp / ZHP) * (m.slow > 0 ? .5 : 1);        // the lower your health the slower you walk, and a hit staggers you
     if(dir){ m.wx = Math.max(0, Math.min(z.fin + 40, m.wx + dir * spd * h)); m.face = dir; m.phase += h * 9 * spd / ZW; }
     // jumping and landing; platforms are one-way: you jump up through them and land on top
     if(m.dropT > 0) m.dropT -= h;
@@ -3531,7 +3558,15 @@ function zTick(h){
   else if(!m.fin && !m.dead){
     for(const e of z.zombies){
       const Ty = ZTYPES[e.ty];
-      if(e.hp > 0 && Math.abs(e.x - m.wx) < Ty.w + 10 && (m.down || m.h < Ty.h * .8)){ if(m.down) zHurtDown(); else zHurt(Ty.dmg, e.x); break; }
+      if(e.hp > 0 && Math.abs(e.x - m.wx) < Ty.w + 10 && (m.down || m.h < Ty.h + 5)){ if(m.down) zHurtDown(); else zHurt(Ty.dmg, e.x); break; }
+    }
+  }
+  if(m.inv <= 0 && !m.fin && !m.dead){
+    for(const q of z.proj){
+      if(z.pHit.has(q.id) || Math.abs(q.x - m.wx) > 18 || q.h < m.h - 8 || q.h > m.h + (m.down ? 26 : 72)) continue;
+      z.pHit.add(q.id); q.t = 0;
+      if(m.down) zHurtDown(); else zHurt(q.dmg, q.x);
+      break;
     }
   }
   if(!m.down && !m.fin && m.wx >= z.fin){ m.fin = true; m.wx = z.fin; }
@@ -3662,7 +3697,8 @@ function drawZombie(e, sx, lying){
   const hip = [0, -30 * s], neck = [3 * s, -54 * s], sw = Math.sin(e.phase) * 14 * s * sway, bob = Math.sin(e.phase * .7) * 3 * sway;
   limb(neck, hip);
   limb(hip, [sw * .5 + 4, -14 * s], [sw, 0]); limb(hip, [-sw * .5 + 4, -14 * s], [-sw, 0]);
-  limb([2 * s, -48 * s], [16 * s, -50 * s], [30 * s, -47 * s + bob]);
+  if(e.th > 0){ limb([2 * s, -48 * s], [10 * s, -64 * s], [18 * s, -80 * s]); }            // winding up a throw
+  else limb([2 * s, -48 * s], [16 * s, -50 * s], [30 * s, -47 * s + bob]);
   limb([2 * s, -44 * s], [14 * s, -44 * s], [26 * s, -40 * s - bob]);
   ctx.fillStyle = C.paper; ctx.beginPath(); ctx.arc(6 * s, -63 * s, 9 * s, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
   ctx.strokeStyle = (e.ty === 1 || e.ty === 3) ? C.pencil : C.ink; ctx.lineWidth = e.ty === 3 ? 4 : 2;
@@ -3739,6 +3775,16 @@ function drawZombieScene(){
   for(const t of z.mates){ const age = Math.min(.3, (now - t.buT) / 1000); for(const b of t.bu) line(b[0] + b[2] * age, b[1] + b[3] * age, b[2], b[3]); }
   ctx.restore();
   const bomb = (x, h) => { const sx = X(x), y = ground - h; ctx.save(); ctx.fillStyle = C.ink; ctx.beginPath(); ctx.arc(sx, y, 8, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = (Math.floor(T * 14) % 2) ? C.marker : C.pencil; ctx.beginPath(); ctx.arc(sx + 6, y - 9, 3, 0, Math.PI * 2); ctx.fill(); ctx.restore(); };
+  for(const q of z.proj){
+    const sx = X(q.x), y = ground - q.h, big = q.dmg > 15;
+    if(sx < -20 || sx > W + 20) continue;
+    ctx.save();
+    ctx.fillStyle = big ? '#2E5A2B' : '#8C5BA8'; ctx.strokeStyle = C.ink; ctx.lineWidth = 2.5;
+    const L = Math.hypot(q.vx, q.vy) || 1;
+    ctx.globalAlpha = .35; ctx.beginPath(); ctx.arc(sx - q.vx / L * 12, y + q.vy / L * 12, big ? 8 : 4.5, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+    ctx.beginPath(); ctx.arc(sx, y, big ? 12 : 7, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
   for(const b of z.bombs) bomb(b.x, b.h);
   for(const t of z.mates) for(const b of t.bm) bomb(b[0], b[1]);
   for(const f of z.fx){
