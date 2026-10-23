@@ -111,6 +111,9 @@ body.vs .atk{display:flex}
 .chip{font:inherit;font-weight:500;font-size:15px;color:var(--ink);background:transparent;border:2px solid var(--ink);border-radius:999px;padding:3px 14px;cursor:pointer}
 .chip[aria-pressed="true"]{background:var(--btn);color:var(--btnText)}
 .online[hidden]{display:none}
+.recline{color:var(--muted);font-size:14px;line-height:1.6;margin:0 0 8px}
+.recline strong{color:var(--ink)}
+.recline:empty{display:none}
 .orow{display:flex;gap:8px;justify-content:center;margin-bottom:6px}
 .rinput{font:inherit;font-size:16px;padding:3px 12px;border:2px solid var(--ink);border-radius:10px;background:var(--paper);color:var(--ink);width:min(48%,190px);text-align:center;direction:ltr}
 .ostatus{color:var(--muted);font-size:15px;line-height:1.6;min-height:1.6em;margin-bottom:10px}
@@ -375,6 +378,8 @@ body.vs .keys .k-atk{display:inline}
             <button class="chip" data-pl="4" type="button">4</button>
             <button class="chip" data-pl="6" type="button">6</button>
           </div>
+          <div class="recline" id="recLine"></div>
+          <div class="recline long" id="dailyLine"></div>
           <div class="online" id="onlineBox" hidden>
             <div class="orow">
               <button class="chip" id="myNameShow" type="button" title="غيّر الاسم من المتجر">...</button>
@@ -398,6 +403,8 @@ body.vs .keys .k-atk{display:inline}
       <div class="chips st-tabs" id="stTabs">
         <button class="chip" data-tab="skins" type="button">الأشكال</button>
         <button class="chip" data-tab="looks" type="button">المقذوفات</button>
+        <button class="chip" data-tab="daily" type="button">مكافآت</button>
+        <button class="chip" data-tab="board" type="button">الترتيب</button>
         <button class="chip" data-tab="name" type="button">الاسم</button>
         <button class="chip" data-tab="account" type="button">الحساب</button>
       </div>
@@ -552,6 +559,9 @@ const BRICK_MAX = 3, BRICK_H = 42, BRICK_SLOW = 3.2, BRICK_MUL = .5, BRICK_CD = 
 const SPAWN_AHEAD = W + 60 - PX;
 const START_SAFE = 4;                      // seconds of protection at the start of a run: no crashes, no hits, no trips, no grabs
 const AIR_MUL = .9, SLIDE_MUL = .88;       // jumping or sliding costs a little speed
+const ATK_IMM_TRIP = 2.5, ATK_IMM_SHOT = 1.5;   // after being tripped or hit by a shot nobody can hit you again right away
+const COMBO_GAP = 1.1, NEAR_ENERGY = 4;    // coins picked up within COMBO_GAP of each other chain; skimming a spike refills a little energy
+const safeStart = w => w.elapsed < START_SAFE;
 
 // how the computer plays: mistakes, when it boosts / slows, how often it goes for drinks
 const LEVELS = {
@@ -645,6 +655,8 @@ function makeCourse(seed){
     else if(r < .60) kind = 'spike';
     else if(r < .82) kind = 'crate';
     else kind = t > 4 ? 'log' : 'spike';
+    const rx = t > 6 ? rnd() : 1;                      // later in the run some new shapes show up
+    if(rx < .12) kind = 'perch'; else if(rx < .22) kind = 'field';
 
     if(kind === 'stairs'){
       const pool = t < 15
@@ -663,7 +675,14 @@ function makeCourse(seed){
       it.w = cx;
     }else{
       let top = 30;
-      if(kind === 'spike'){
+      if(kind === 'perch'){                                   // a spike sitting on a crate: clear both in one jump
+        it.sol.push({ kind:'crate', x:0, w:44, hh:1, top:44 });
+        it.obs.push({ t:'spike', x:7, n:1, w:30, base:44 }); it.w = 44; top = 68;
+      }else if(kind === 'field'){                             // three single spikes in a row: needs a long held jump
+        const d = 30 + sp * .16;
+        for(let i = 0; i < 3; i++) it.obs.push({ t:'spike', x:i * d, n:1, w:30, base:0 });
+        it.w = 2 * d + 30;
+      }else if(kind === 'spike'){
         const n = 1 + ((rnd() * (t > 20 ? 3 : 2)) | 0);
         it.obs.push({ t:'spike', x:0, n, w:30 * n, base:0 }); it.w = 30 * n;
       }else if(kind === 'crate'){
@@ -717,7 +736,7 @@ function makeWorld(seed, isPlayer, id){
   return {
     isPlayer, id:id || (isPlayer ? 'me' : 'cpu'), skin:'base', look:'brick', course:makeCourse(seed), ci:0, di:0, bi:0,
     obstacles:[], solids:[], coins:[], drinks:[], bpiles:[], particles:[],
-    ammo:1, tripCd:0, brickCd:0, grabCd:0, grabT:0, grabbing:false, slowT:0, slowMul:1, kickT:0, actMul:1,
+    ammo:1, tripCd:0, brickCd:0, grabCd:0, grabT:0, grabbing:false, slowT:0, slowMul:1, kickT:0, actMul:1, atkImm:0, combo:0, comboT:0, bestCombo:0, bonus:0, nearN:0, pop:null,
     scroll:0, elapsed:0, speed:400, energy:60, boosting:false, charging:false, boostMul:1,
     coinCount:0, score:0, dist:0, invuln:0, dead:false, respawnT:0, shake:0, stuns:0,
     input:{ jump:false, slide:false, boost:false, charge:false, grab:false },
@@ -732,6 +751,7 @@ function dust(w, n){
     w.particles.push({ x:PX - 4 + Math.random() * 8, h:2, vx:-(60 + Math.random() * 120), vy:30 + Math.random() * 80, life:.35 + Math.random() * .2 });
   }
 }
+function popup(w, t){ if(w.isPlayer) w.pop = { t, life:1 }; }
 function stepParticles(w, dt){
   for(const p of w.particles){ p.x += p.vx * dt; p.h += p.vy * dt; p.life -= dt; }
   w.particles = w.particles.filter(p => p.life > 0);
@@ -750,8 +770,9 @@ function worldJump(w){
   return true;
 }
 
-function hazardHit(o, cx, h, hh){
-  const px0 = cx - 11, px1 = cx + 11, pb = h, pt = h + hh;
+function hazardHit(o, cx, h, hh, mv){
+  mv = mv || 0;                                    // mv widens the runner vertically: used to spot near misses
+  const px0 = cx - 11, px1 = cx + 11, pb = h - mv, pt = h + hh + mv;
   let x0, x1, b, t;
   if(o.t === 'spike'){ x0 = o.x + 6; x1 = o.x + o.w - 6; b = o.base; t = o.base + 24; }
   else { x0 = o.x + 4; x1 = o.x + o.w - 4; b = o.base + 42; t = 9999; }
@@ -805,7 +826,7 @@ function slowWorld(w, t, mul){ w.slowT = Math.max(w.slowT, t); w.slowMul = mul; 
 
 function tripWorld(w, stun){                    // he falls on his face
   const P = w.P;
-  w.dead = true; w.boosting = false; w.charging = false; w.boostMul = 1; w.stuns++; w.grabbing = false;
+  w.dead = true; w.boosting = false; w.charging = false; w.boostMul = 1; w.stuns++; w.grabbing = false; w.atkImm = ATK_IMM_TRIP;
   P.vy = 260; P.rot = 0; P.lying = false; P.sliding = false; P.fwd = true; P.sleep = false; P.dfloor = P.on ? P.h : 0;
   w.respawnT = stun || TRIP_STUN;
   if(w.isPlayer){ if(!reduceMotion) w.shake = .6; beep(200, 90, .25, 'sawtooth', .06); }
@@ -818,11 +839,11 @@ const nearestOf = (a, vs) => {
 };
 function inTripRange(ax, ah, v){ return Math.abs(ax - v.scroll) <= TRIP_RANGE && Math.abs(ah - v.P.h) <= 50; }
 function tripAttempt(a, vs){                    // whoever is beside him goes down
-  if(a.dead || a.tripCd > 0) return false;
+  if(a.dead || a.tripCd > 0 || safeStart(a)) return false;
   a.tripCd = TRIP_CD; a.kickT = .3;
   if(a.isPlayer) beep(260, 140, .1, 'square', .05);
   let hit = false;
-  for(const v of vs) if(!v.dead && v.invuln <= 0 && inTripRange(a.scroll, a.P.h, v)){ tripWorld(v); hit = true; }
+  for(const v of vs) if(!v.dead && v.invuln <= 0 && v.atkImm <= 0 && inTripRange(a.scroll, a.P.h, v)){ tripWorld(v); hit = true; }
   return hit;
 }
 
@@ -831,7 +852,7 @@ function grabStep(a, vs, dt, applyToVictim){
   const slack = applyToVictim ? 0 : .2 * a.speed;       // online, the others are drawn a little behind where they really are
   let tgt = null, bd = 1e9;
   for(const v of vs){
-    if(v.dead || v.invuln > 0 || a.scroll > v.scroll + 20 + slack || Math.abs(a.scroll - v.scroll) > GRAB_RANGE + slack || Math.abs(a.P.h - v.P.h) > 50) continue;
+    if(v.dead || v.invuln > 0 || v.atkImm > 0 || a.scroll > v.scroll + 20 + slack || Math.abs(a.scroll - v.scroll) > GRAB_RANGE + slack || Math.abs(a.P.h - v.P.h) > 50) continue;
     const d = Math.abs(a.scroll - v.scroll);
     if(d < bd){ bd = d; tgt = v; }
   }
@@ -839,13 +860,13 @@ function grabStep(a, vs, dt, applyToVictim){
     a.grabT += dt;
     if(applyToVictim && tgt) slowWorld(tgt, .15, GRAB_MUL);
     if(a.grabT >= GRAB_MAX || !a.input.grab || a.dead || !tgt){ a.grabbing = false; a.grabCd = GRAB_CD; }
-  }else if(a.input.grab && a.grabCd <= 0 && !a.dead && tgt){
+  }else if(a.input.grab && a.grabCd <= 0 && !a.dead && !safeStart(a) && tgt){
     a.grabbing = true; a.grabT = 0;
   }
 }
 
 function throwWeapon(a, vs){                    // towards whoever is closest; every projectile does the same, only its look differs
-  if(a.dead || a.brickCd > 0 || a.ammo <= 0) return false;
+  if(a.dead || a.brickCd > 0 || a.ammo <= 0 || safeStart(a)) return false;
   a.ammo--; a.brickCd = BRICK_CD;
   const t = nearestOf(a, vs);
   const dir = (!t || t.scroll - a.scroll >= 0) ? 1 : -1;
@@ -855,12 +876,13 @@ function throwWeapon(a, vs){                    // towards whoever is closest; e
 }
 function shotHits(bx, v, bx0){
   const lo = Math.min(bx, bx0 === undefined ? bx : bx0), hi = Math.max(bx, bx0 === undefined ? bx : bx0);
-  if(v.dead || v.invuln > 0 || v.scroll < lo - SHOT.win || v.scroll > hi + SHOT.win) return false;
+  if(v.dead || v.invuln > 0 || v.atkImm > 0 || v.elapsed < START_SAFE + (v.isPlayer && mode === 'online' ? .5 : 0) || v.scroll < lo - SHOT.win || v.scroll > hi + SHOT.win) return false;
   const hh = v.P.sliding ? 30 : 66;                 // slide under it or jump over it
   return BRICK_H + 8 > v.P.h && BRICK_H - 8 < v.P.h + hh;
 }
 function applyShot(v){
   slowWorld(v, SHOT.slow[0], SHOT.slow[1]);
+  v.atkImm = ATK_IMM_SHOT;
   if(v.isPlayer) beep(150, 80, .2, 'sawtooth', .07);
 }
 function stepBricks(dt){
@@ -890,6 +912,9 @@ function stepWorld(w, dt){
   if(w.grabCd > 0) w.grabCd -= dt;
   if(w.kickT > 0) w.kickT -= dt;
   if(w.slowT > 0) w.slowT -= dt;
+  if(w.atkImm > 0) w.atkImm -= dt;
+  if(w.comboT > 0){ w.comboT -= dt; if(w.comboT <= 0) w.combo = 0; }
+  if(w.pop){ w.pop.life -= dt * 1.1; if(w.pop.life <= 0) w.pop = null; }
 
   // energy: boost drains it, it refills slowly alone and faster while charging
   w.boosting = inp.boost && w.energy > (w.boosting ? 0 : 8);
@@ -963,6 +988,9 @@ function stepWorld(w, dt){
   for(const c of w.coins){
     if(Math.abs(c.x - PX) < 22 && Math.abs(c.h - pch) < 30){
       c.got = true; w.coinCount++; w.energy = Math.min(100, w.energy + COIN_ENERGY);
+      w.combo = w.comboT > 0 ? w.combo + 1 : 1; w.comboT = COMBO_GAP;
+      if(w.combo > w.bestCombo) w.bestCombo = w.combo;
+      if(w.combo % 5 === 0){ w.bonus += 10; w.energy = Math.min(100, w.energy + 3); popup(w, 'كومبو ×' + w.combo); }   // score and energy only: wallet coins stay as collected
       if(w.isPlayer) beep(880, 1320, .09, 'triangle', .05);
     }
   }
@@ -985,7 +1013,18 @@ function stepWorld(w, dt){
   stepParticles(w, dt);
   if(w.invuln > 0) w.invuln -= dt;
   w.dist = Math.floor(w.scroll / 50);
-  w.score = w.dist + w.coinCount * 10;
+  if(w.isPlayer && w.invuln <= 0 && !crash){                       // skimming a spike by a hair pays a little
+    const hh2 = P.sliding ? 30 : 66;
+    for(const o of w.obstacles){
+      if(o.paid || o.t !== 'spike') continue;
+      if(hazardHit(o, PX, P.h, hh2, 10)) o.nm = true;
+      else if(o.nm && o.x + o.w - 6 < PX - 11){
+        o.paid = true; w.nearN++; w.bonus += 5; w.energy = Math.min(100, w.energy + NEAR_ENERGY);
+        popup(w, 'قريبة! +5');
+      }
+    }
+  }
+  w.score = w.dist + w.coinCount * 10 + w.bonus;
   if(w.invuln <= 0 && (crash || hits(w))) crashWorld(w, floor);
 }
 
@@ -1253,7 +1292,7 @@ function beginRace(r){
   const delay = (Date.parse(r.go_at) - (Date.now() + net.offset)) / 1000;
   net.raceT0 = performance.now() + Math.max(0, delay) * 1000;
   bricks = []; remoteBricks = []; ackIds = []; myTp = 0; shotPrev.clear(); net.mine = {}; net.states = {}; net.seen = {};
-  runBanked = false; lastEarned = 0; earnNote = '';
+  runBanked = false; lastEarned = 0; earnNote = ''; recNote = '';
   setRaceLen(r.length_m);
   const seed = Number(r.seed);
   pw = makeWorld(seed, true); pw.skin = acct.skin; pw.look = acct.projectile;
@@ -1299,6 +1338,7 @@ async function finishRace(){
     res = await rpc('race_finish', { p_race:net.raceId, p_dist_m:pw.dist | 0, p_client_ms:Math.max(0, Math.round(performance.now() - net.raceT0)), p_seen:seenMap() });
   }catch(e){ net.err = errAr(e); }
   const win = !!(res && res.rank === 1);
+  if(res && !res.held && res.rank){ noteRecord(pw.elapsed); if(win) dailyAdd('wins', 1); }
   let winnerName = '';
   if(win) pres({ fin:1 });                                            // tell the others, they freeze right away
   else if(sb){
@@ -1334,6 +1374,8 @@ async function pollWinner(){
   net.winPolling = false;
 }
 
+// nobody can hurt me in the first seconds (a little extra for network delay), while I'm blinking after a crash, or right after a hit
+const hitSafe = () => pw.invuln > 0 || pw.atkImm > 0 || pw.elapsed < START_SAFE + .5;
 function onlineTick(dt){
   const now = performance.now();
   const racing = !!net.raceId && (state === 'countdown' || state === 'playing' || (state === 'finished' && !net.resolved));
@@ -1354,9 +1396,9 @@ function onlineTick(dt){
     // tricks coming from this player: my game decides whether they landed on me
     if((pr.tp | 0) > o.lastTp){
       o.lastTp = pr.tp | 0;
-      if(!pw.dead && pw.invuln <= 0 && Math.abs(pw.scroll - pr.tx) <= TRIP_RANGE + 20 + .12 * pw.speed && Math.abs(pw.P.h - (pr.th || 0)) <= 60) tripWorld(pw);   // allowance for network delay
+      if(!pw.dead && !hitSafe() && Math.abs(pw.scroll - pr.tx) <= TRIP_RANGE + 20 + .12 * pw.speed && Math.abs(pw.P.h - (pr.th || 0)) <= 60) tripWorld(pw);   // allowance for network delay
     }
-    if(pr.gr === 1 && !pw.dead){
+    if(pr.gr === 1 && !pw.dead && !hitSafe()){
       const d = pw.scroll - pr.tx, slack = 20 + .12 * pw.speed;
       if(d >= -slack && d <= GRAB_RANGE + slack) slowWorld(pw, .15, GRAB_MUL);
     }
@@ -1429,6 +1471,7 @@ const ERR_AR = {
   'room full':'الغرفة ممتلئة', 'no such room':'الغرفة دي مش موجودة', 'race running':'فيه سباق شغال في الغرفة دي',
   'room exists':'الكود ده مستخدم', 'bad code':'الكود حروف إنجليزي وأرقام بس', 'not everyone is ready':'مش كل اللاعبين جاهزين',
   'need 2 players':'محتاج لاعبين اتنين على الأقل', 'a player is banned':'فيه لاعب محظور في الغرفة', 'forbidden':'مش مسموحلك',
+  'not done yet':'لسه ما خلصتش التحدي ده', 'already claimed':'خدت المكافأة دي النهاردة', 'no reward':'المكافآت اليومية واقفة دلوقتي',
   'too many players for that size':'فيه لاعبين أكتر من الحجم ده', 'not the owner':'بس صاحب الغرفة يعمل كده', 'offline':'السيرفر مش متاح'
 };
 function errAr(e){
@@ -1619,6 +1662,7 @@ function bankRun(){
   runBanked = true;
   const coins = pw.coinCount | 0;
   lastEarned = 0; earnNote = '';
+  dailyAdd('coins', coins); dailyAdd('dist', pw.dist | 0); dailyAdd('near', pw.nearN | 0); dailyAdd('combo', pw.bestCombo | 0, true);
   if(!coins) return;
   if(!acct.signedIn){ earnNote = 'سجّل دخول عشان عملات الجولة تتحط في محفظتك'; setEarn(); return; }
   if(acct.ban){ setEarn(); return; }
@@ -1629,6 +1673,58 @@ function bankRun(){
   }).catch(e => { earnNote = errAr(e); setEarn(); });
 }
 function setEarn(){ const n = $('earnLine'); if(n) n.textContent = earnNote; }
+
+/* ---------- best times per race length, and the day's challenges (both live on this device only) ---------- */
+let recNote = '';
+const recOf = m => { const v = parseFloat(load('stickrun:rec:' + m, '')); return v > 0 ? v : 0; };
+function noteRecord(secs){
+  if(!(secs > 0)) return;
+  const prev = recOf(raceM), t = secs.toFixed(1) + ' ث';
+  if(!prev || secs < prev){ save('stickrun:rec:' + raceM, secs.toFixed(2)); recNote = 'وقتك ' + t + (prev ? ' — رقم قياسي جديد!' : ' — أول رقم ليك في ' + raceM + ' م'); }
+  else recNote = 'وقتك ' + t + ' — أفضل وقت ليك ' + prev.toFixed(1) + ' ث';
+}
+const DAILY_POOL = [
+  { id:'coins', txt:n => 'اجمع ' + n + ' عملة', goals:[30, 50, 80] },
+  { id:'dist',  txt:n => 'اجري ' + n + ' متر', goals:[1500, 3000, 5000] },
+  { id:'near',  txt:n => 'عدّي ' + n + ' أشواك بالملّي', goals:[3, 5, 8] },
+  { id:'combo', txt:n => 'كومبو ' + n + ' عملات ورا بعض', goals:[5, 8, 10] },
+  { id:'wins',  txt:n => 'كسب ' + n + (n === 1 ? ' سباق' : ' سباقات'), goals:[1, 2, 3] }
+];
+const dayKey = d => d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+let daily = null;
+function dailyState(){
+  const today = dayKey(new Date());
+  if(daily && daily.day === today) return daily;
+  try{ const s = JSON.parse(load('stickrun:daily', 'null')); if(s && s.day === today && Array.isArray(s.m)) return (daily = s); }catch(e){}
+  let h = 7; for(const c of today) h = (Math.imul(h, 31) + c.charCodeAt(0)) | 0;
+  const r = mulberry32(h), pool = DAILY_POOL.slice(), m = [];
+  while(m.length < 3){ const p = pool.splice((r() * pool.length) | 0, 1)[0]; m.push({ id:p.id, goal:p.goals[(r() * p.goals.length) | 0], got:0 }); }
+  daily = { day:today, m, done:false };
+  save('stickrun:daily', JSON.stringify(daily));
+  return daily;
+}
+function dailyAdd(id, n, asMax){
+  const s = dailyState(), m = s.m.find(x => x.id === id);
+  if(!m || m.got >= m.goal || !(n > 0)) return;
+  m.got = Math.min(m.goal, asMax ? Math.max(m.got, n) : m.got + n);
+  if(m.got >= m.goal && pw) popup(pw, '✓ تحدي خلص');
+  if(!s.done && s.m.every(x => x.got >= x.goal)){
+    s.done = true;
+    const y = new Date(); y.setDate(y.getDate() - 1);
+    let st = {}; try{ st = JSON.parse(load('stickrun:streak', '{}')) || {}; }catch(e){}
+    save('stickrun:streak', JSON.stringify({ last:s.day, n:st.last === dayKey(y) ? (st.n | 0) + 1 : 1 }));
+  }
+  save('stickrun:daily', JSON.stringify(s));
+}
+function dailyHtml(){
+  const s = dailyState();
+  let st = {}; try{ st = JSON.parse(load('stickrun:streak', '{}')) || {}; }catch(e){}
+  const rows = s.m.map(x => {
+    const p = DAILY_POOL.find(q => q.id === x.id), ok = x.got >= x.goal;
+    return (ok ? '✓ ' : '◻ ') + esc(p.txt(x.goal)) + (ok ? '' : ' (' + x.got + '/' + x.goal + ')');
+  });
+  return '<strong>تحديات للتسلية (المكافآت الحقيقية من المتجر ← مكافآت)</strong><br>' + rows.join('<br>') + (st.n > 1 && st.last ? '<br>سلسلة أيام: ' + st.n : '');
+}
 
 /* ---------- store ---------- */
 let storeTab = 'skins', storeBusy = false;
@@ -1715,6 +1811,49 @@ function renderStore(){
       list.appendChild(d);
       previewLook(cv, kind);
     }
+  }else if(storeTab === 'daily'){
+    const d = card('wide');
+    d.append(txt('div', 'nm', 'مكافآت النهاردة'));
+    if(!acct.signedIn){ d.append(txt('div', 'ds', 'سجّل دخول عشان تاخد مكافآت يومية.'), btn('سجّل دخول', () => showAuth())); }
+    else{
+      const box = document.createElement('div');
+      box.style.cssText = 'display:flex;flex-direction:column;gap:8px';
+      box.append(txt('div', 'ds', 'بحمّل...'));
+      d.append(txt('div', 'ds', 'التحديات بتتحسب من سجلات السيرفر وبتتجدد كل يوم. كل مكافأة بتتاخد مرة واحدة.'), box);
+      const label = { play:n => 'العب ' + n + (n === 1 ? ' سباق' : ' سباقات') + ' أونلاين لحد الآخر', win:n => 'كسب ' + n + (n === 1 ? ' سباق' : ' سباقات') + ' أونلاين', earn:n => 'اكسب ' + n + ' عملة من الجري' };
+      rpc('daily_state').then(st => {
+        if(!box.isConnected) return;
+        box.textContent = '';
+        for(const m of st.missions){
+          const row = document.createElement('div'); row.className = 'row';
+          const t = txt('div', 'ds', (label[m.id] ? label[m.id](m.goal) : m.id) + ' (' + m.got + '/' + m.goal + ')'); t.style.flex = '1';
+          const done = m.got >= m.goal;
+          row.append(t, m.claimed ? btn('اتاخدت', () => {}, true)
+            : btn(done ? 'خد ' + st.reward + ' عملة' : 'لسه', () => storeAct(async () => { await rpc('daily_claim', { p_id:m.id }); await refreshState(); }, 'اتضافت المكافأة'), !done || !!acct.ban));
+          box.appendChild(row);
+        }
+      }).catch(() => { if(box.isConnected) box.textContent = 'المكافآت مش متاحة دلوقتي.'; });
+    }
+    list.appendChild(d);
+  }else if(storeTab === 'board'){
+    const d = card('wide');
+    d.append(txt('div', 'nm', 'أفضل اللاعبين الأسبوع ده'));
+    if(!acct.signedIn){ d.append(txt('div', 'ds', 'سجّل دخول عشان تشوف الترتيب.'), btn('سجّل دخول', () => showAuth())); }
+    else{
+      const box = txt('div', 'ds', 'بحمّل...');
+      d.append(txt('div', 'ds', 'بالفوز في السباقات الأونلاين آخر 7 أيام.'), box);
+      rpc('weekly_board').then(rows => {
+        if(!box.isConnected) return;
+        box.textContent = '';
+        if(!rows || !rows.length){ box.textContent = 'لسه مفيش سباقات الأسبوع ده.'; return; }
+        rows.forEach((r, i) => {
+          const line = txt('div', '', (i + 1) + '. ' + r.name + ' — ' + r.wins + ' فوز من ' + r.races);
+          if(r.name === acct.name) line.style.fontWeight = '700';
+          box.appendChild(line);
+        });
+      }).catch(() => { if(box.isConnected) box.textContent = 'الترتيب مش متاح دلوقتي.'; });
+    }
+    list.appendChild(d);
   }else if(storeTab === 'name'){
     const d = card('wide');
     d.append(txt('div', 'nm', 'اسمك: ' + acct.name));
@@ -1902,6 +2041,7 @@ function showRaceEnd(win, why){
   let html = finRank.map((r, i) => (i + 1) + '. ' + (r.me ? '<strong>أنت</strong>' : esc(r.name)) + ' — ' + (r.dnf ? 'خرج' : r.dist + ' م')).join('<br>');
   if(!online) html += '<br>فوز <strong>' + wins + '</strong> — خسارة <strong>' + losses + '</strong>';
   if(online && net.race) html += '<br>' + (win ? (why === 'held' ? 'الجايزة متجمدة لحد ما صاحب اللعبة يراجع السباق' : '+' + net.race.prize + ' عملات جايزة') : '-' + net.race.fee + ' عملات رسوم الدخول');
+  if(recNote) html += '<br>' + esc(recNote);
   html += '<br><span id="earnLine"></span>';
   let title = win ? 'كسبت!' : (finWinner ? finWinner + ' كسب' : 'خسرت');
   if(why === 'held') title = 'وصلت أول!';
@@ -1938,6 +2078,9 @@ function paintOpts(){
   $('plChips').hidden = mode !== 'online';
   paintPl();
   $('onlineBox').hidden = mode !== 'online';
+  const rec = recOf(raceM);
+  $('recLine').textContent = mode !== 'free' && rec ? 'أفضل وقت ليك في ' + raceM + ' م: ' + rec.toFixed(1) + ' ث' : '';
+  $('dailyLine').innerHTML = dailyHtml();
 }
 el.ovOpts.addEventListener('click', async e => {
   const b = e.target.closest('.chip');
@@ -1972,7 +2115,7 @@ const canStart = () => state === 'ready' || ((state === 'dead' || state === 'fin
 
 function newWorlds(){
   const seed = (Math.random() * 4294967296) >>> 0;
-  runBanked = false; lastEarned = 0;
+  runBanked = false; lastEarned = 0; recNote = '';
   pw = makeWorld(seed, true);
   pw.skin = acct.skin; pw.look = acct.projectile;
   opps = [];
@@ -2040,7 +2183,7 @@ function endRace(win, winnerName){
   state = 'finished'; endShown = false;
   bankRun();                 // everything freezes here: no more running, no more points
   finRank = rankings(); finWinner = winnerName || '';
-  if(win){ wins++; save('stickrun:wins', wins); beep(660, 1320, .4, 'triangle', .07); }
+  if(win){ wins++; save('stickrun:wins', wins); noteRecord(pw.elapsed); dailyAdd('wins', 1); beep(660, 1320, .4, 'triangle', .07); }
   else { losses++; save('stickrun:losses', losses); beep(300, 120, .4, 'sawtooth', .05); }
   updateHud();
   setTimeout(() => { if(state === 'finished') showRaceEnd(win); }, 900);
@@ -2056,7 +2199,7 @@ function checkFinish(){
 
 /* ---------- input ---------- */
 function jump(){ if(state === 'playing' && !pw.dead) worldJump(pw); }
-function canAttack(){ return state === 'playing' && mode !== 'free' && !pw.dead; }
+function canAttack(){ return state === 'playing' && mode !== 'free' && !pw.dead && !safeStart(pw); }
 function doTrip(){
   if(!canAttack() || pw.tripCd > 0) return;
   if(mode === 'race'){ tripAttempt(pw, opps.map(o => o.w)); return; }
@@ -2487,6 +2630,13 @@ function drawFigure(w, band){
   }else{
     ctx.beginPath(); ctx.arc(head[0] + 4, head[1] + 1, 1.8, 0, Math.PI * 2); ctx.fill();
   }
+  if(w.elapsed < START_SAFE && !w.dead && !w.remote){      // start protection: a dashed bubble that fades out
+    ctx.globalAlpha = Math.min(1, START_SAFE - w.elapsed) * .85;
+    ctx.strokeStyle = C.marker; ctx.lineWidth = 4; ctx.setLineDash([9, 7]); ctx.lineDashOffset = -T * 30;
+    ctx.beginPath(); ctx.arc(PX, y - 34, 48, 0, Math.PI * 2); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
+  }
   if(w.slowT > 0 || w.grabbing){                    // dizzy stars while slowed
     ctx.fillStyle = C.marker; ctx.strokeStyle = C.ink; ctx.lineWidth = 1.5;
     for(let i = 0; i < 3; i++){
@@ -2581,6 +2731,26 @@ function drawLane(lane){
   drawOpponent();
   drawBricks();
   drawFigure(w, skinOf(w).band || C.pencil);
+  drawPop(w);
+  ctx.restore();
+}
+
+function drawPop(w){
+  if(w.dead) return;
+  ctx.save();
+  ctx.textAlign = 'center'; ctx.lineJoin = 'round'; ctx.strokeStyle = C.paper; ctx.lineWidth = 5;
+  const y = ground - w.P.h;
+  if(w.combo >= 3){
+    ctx.font = '700 17px "Cairo", sans-serif'; ctx.fillStyle = C.ink;
+    const t = '×' + w.combo;
+    ctx.strokeText(t, PX + 46, y - 70); ctx.fillText(t, PX + 46, y - 70);
+  }
+  if(w.pop){
+    ctx.globalAlpha = Math.min(1, w.pop.life * 1.6);
+    ctx.font = '400 26px "Lalezar","Cairo",sans-serif'; ctx.fillStyle = C.pencil;
+    const py = y - 104 - (1 - w.pop.life) * 26;
+    ctx.strokeText(w.pop.t, PX, py); ctx.fillText(w.pop.t, PX, py);
+  }
   ctx.restore();
 }
 
@@ -2598,10 +2768,21 @@ function drawBanner(){
   ctx.restore();
 }
 
+function drawSafeNote(){
+  if(state !== 'playing' || !pw || pw.dead || pw.elapsed >= START_SAFE) return;
+  ctx.save();
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = '700 18px "Cairo",sans-serif'; ctx.lineJoin = 'round'; ctx.lineWidth = 5; ctx.strokeStyle = C.paper; ctx.fillStyle = C.ink;
+  const t = 'حماية البداية ' + Math.ceil(START_SAFE - pw.elapsed);
+  ctx.strokeText(t, W / 2, HT * .2); ctx.fillText(t, W / 2, HT * .2);
+  ctx.restore();
+}
+
 function render(){
   ctx.setTransform(dpr * scale, 0, 0, dpr * scale, 0, 0);
   lanes.forEach(drawLane);
   drawBanner();
+  drawSafeNote();
 }
 
 /* ---------- loop ---------- */
@@ -2649,6 +2830,34 @@ function frame(now){
   render();
   requestAnimationFrame(frame);
 }
+
+/* ---------- updates: when a new version is published, everybody who isn't racing reloads ---------- */
+const hashText = s => { let h = 5381; for(let i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0; return s.length + ':' + h; };
+let pageHash = null, updating = false;
+async function fetchPageHash(){
+  const r = await fetch(location.pathname + '?v=' + Date.now(), { cache:'no-store' });
+  if(!r.ok) throw new Error('http ' + r.status);
+  return hashText(await r.text());
+}
+const busyNow = () =>
+  state === 'countdown' || state === 'playing' || state === 'paused' ||
+  (mode === 'online' && net.raceId && !net.resolved && state !== 'ready') ||
+  !authEl.hidden || !bannedEl.hidden || !supEl.hidden || !storeEl.hidden ||
+  (document.activeElement && /^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName));
+async function checkUpdate(){
+  if(updating) return;
+  try{
+    const h = await fetchPageHash();
+    if(pageHash === null){ pageHash = h; return; }
+    if(h === pageHash || busyNow()) return;
+    updating = true;
+    if(net.room){ try{ await Promise.race([leaveRoomNow(), new Promise(r => setTimeout(r, 1500))]); }catch(e){} }
+    location.reload();
+  }catch(e){ updating = false; }
+}
+checkUpdate();
+setInterval(checkUpdate, 45000);
+document.addEventListener('visibilitychange', () => { if(!document.hidden) checkUpdate(); });
 
 newWorlds();
 setRaceLen(raceM);
