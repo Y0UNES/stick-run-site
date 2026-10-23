@@ -114,6 +114,25 @@ body.vs .atk{display:flex}
 .recline{color:var(--muted);font-size:14px;line-height:1.6;margin:0 0 8px}
 .recline strong{color:var(--ink)}
 .recline:empty{display:none}
+#eventLine{font-weight:700;color:var(--ink)}
+.how{margin:2px 0 10px;color:var(--muted)}
+.how summary{cursor:pointer;font-weight:700;color:var(--ink);list-style:none;display:inline-block;padding:2px 12px;border-radius:999px;border:2px dashed var(--grid);font-size:14px}
+.how summary::-webkit-details-marker{display:none}
+.how[open] summary{border-style:solid;border-color:var(--ink)}
+.how > div{margin-top:6px;line-height:1.9;font-size:14px}
+.how > span{line-height:1.9;font-size:14px}
+.card > .btn{position:sticky;bottom:6px;z-index:2}
+.opt-lbl{color:var(--muted);font-size:14px;align-self:center;min-width:3.4em;text-align:end}
+.st-tabs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+.st-tabs .chip{flex:none}
+@media (pointer:coarse){ .chip{padding:6px 16px;min-height:38px} .pad:active{filter:brightness(.92)} }
+.stage.two .card{padding:8px 18px}
+.stage.two .opts .chips{margin-bottom:6px;gap:6px}
+.stage.two .card h1{font-size:clamp(32px,5vw,46px)}
+.stage.two .card .txt{margin:4px 0 8px}
+.chip:hover:not([aria-pressed="true"]){background:var(--grid)}
+.btn:hover{filter:brightness(1.08)}
+
 .orow{display:flex;gap:8px;justify-content:center;margin-bottom:6px}
 .rinput{font:inherit;font-size:16px;padding:3px 12px;border:2px solid var(--ink);border-radius:10px;background:var(--paper);color:var(--ink);width:min(48%,190px);text-align:center;direction:ltr}
 .ostatus{color:var(--muted);font-size:15px;line-height:1.6;min-height:1.6em;margin-bottom:10px}
@@ -144,6 +163,7 @@ canvas{display:block;width:100%;height:100%}
 .card .txt{margin:10px 0 16px;color:var(--muted);line-height:1.9;font-size:16px}
 .card .txt strong{color:var(--ink);font-weight:700}
 kbd{
+  display:inline-block;line-height:1.35;
   font:inherit;font-weight:700;font-size:14px;color:var(--ink);
   border:2px solid var(--ink);border-radius:7px;padding:0 8px;margin:0 2px;white-space:nowrap;
 }
@@ -311,14 +331,28 @@ body.vs .keys .k-atk{display:inline}
   .st-list{grid-template-columns:repeat(auto-fill,minmax(130px,1fr))}
   .sitem canvas{width:48px;height:60px}
   .card{padding:6px 14px;max-width:min(92%,620px)}
-  .card h1{font-size:38px;line-height:1.1}
+  .card h1{font-size:30px;line-height:1.1}
+  .opts{display:flex;flex-wrap:wrap;justify-content:center;column-gap:14px}
+  .opts .chips{margin-bottom:4px}
+  .opts .online,.opts .recline,.opts #dailyLine,.opts .how{flex-basis:100%}
   .card .txt{margin:4px 0 8px;font-size:13px;line-height:1.5}
   .chips{margin-bottom:6px;gap:6px}
-  .chip{font-size:13px;padding:2px 10px}
+  .chip{font-size:13px;padding:2px 10px;min-height:0}
   .btn{font-size:17px;padding:6px 26px}
   .rinput{font-size:14px}
   .ostatus{font-size:13px;margin-bottom:6px}
   .long{display:none}
+}
+@media (max-height:520px){
+  .gcard{padding:10px 14px}
+  .gcard h1{font-size:26px;margin:0 0 2px}
+  .gt{font-size:13px;line-height:1.5;margin:2px 0}
+  .gconsent{font-size:12px;line-height:1.5;margin:4px 0}
+  .gform{flex-direction:row;margin:4px 0}
+  .gform input{flex:1;min-width:0;padding:5px 10px}
+  .gbtns{margin-top:4px}
+  .gbtns .btn{font-size:16px;padding:5px 18px}
+  .gmsg{margin-top:2px}
 }
 </style>
 </head>
@@ -348,12 +382,14 @@ body.vs .keys .k-atk{display:inline}
         <div class="txt" id="ovText"></div>
         <div class="opts" id="ovOpts">
           <div class="chips" role="group" aria-label="الوضع">
+            <span class="opt-lbl">الوضع</span>
             <button class="chip" data-mode="free" type="button">جري حر</button>
             <button class="chip" data-mode="race" type="button">سباق ضد الكمبيوتر</button>
             <button class="chip" data-mode="online" type="button">أونلاين</button>
           </div>
           <div class="chips"><button class="chip" id="openStore" type="button">المتجر <span class="cdot"></span><b id="walletN">0</b></button></div>
           <div class="chips" id="lvlChips" role="group" aria-label="الصعوبة">
+            <span class="opt-lbl">الصعوبة</span>
             <button class="chip" data-level="easy" type="button">سهل</button>
             <button class="chip" data-level="mid" type="button">متوسط</button>
             <button class="chip" data-level="hard" type="button">صعب</button>
@@ -380,7 +416,7 @@ body.vs .keys .k-atk{display:inline}
           </div>
           <div class="recline" id="eventLine"></div>
           <div class="recline" id="recLine"></div>
-          <div class="recline long" id="dailyLine"></div>
+          <div class="long" id="dailyLine"></div>
           <div class="online" id="onlineBox" hidden>
             <div class="orow">
               <button class="chip" id="myNameShow" type="button" title="غيّر الاسم من المتجر">...</button>
@@ -1736,7 +1772,8 @@ function dailyHtml(){
     const p = DAILY_POOL.find(q => q.id === x.id), ok = x.got >= x.goal;
     return (ok ? '✓ ' : '◻ ') + esc(p.txt(x.goal)) + (ok ? '' : ' (' + x.got + '/' + x.goal + ')');
   });
-  return '<strong>تحديات للتسلية (المكافآت الحقيقية من المتجر ← مكافآت)</strong><br>' + rows.join('<br>') + (st.n > 1 && st.last ? '<br>سلسلة أيام: ' + st.n : '');
+  const n = s.m.filter(x => x.got >= x.goal).length;
+  return '<details class="how"><summary>تحديات للتسلية ' + n + '/3</summary><div>' + rows.join('<br>') + (st.n > 1 && st.last ? '<br>سلسلة أيام: ' + st.n : '') + '<br>المكافآت الحقيقية: المتجر ← مكافآت</div></details>';
 }
 
 /* ---------- the daily event window (set on the server, shown in the player's own clock) ---------- */
@@ -2054,11 +2091,11 @@ function hideOverlay(){ el.overlay.hidden = true; document.body.classList.remove
 
 function showReady(){
   showOverlay('ستيك رن',
-    '<span class="long">اجري أبعد ما تقدر، واطلع على الدرجات، واقفز فوق الأشواك، وانزلق تحت الحبال، وخد مشروبات الطاقة عشان تملا الباور.<br>' +
+    '<details class="how"><summary>طريقة اللعب</summary><span class="long">اجري أبعد ما تقدر، واطلع على الدرجات، واقفز فوق الأشواك، وانزلق تحت الحبال، وخد مشروبات الطاقة عشان تملا الباور.<br>' +
     'في السباق: انت والكمبيوتر على نفس المسار وتشوفوا بعض لما تكونوا قريبين، وأول واحد يوصل خط النهاية يكسب (طول السباق بتختاره من فوق)، يعني اللي قدام في المسار هو اللي بيكسب. العملات بتملا الطاقة. وتقدر تعمل كعبلة للخصم لو جنبك فيقع على وشه، أو تمسكه عشان تبطّأه، أو ترمي عليه طوبة (بتلاقي الطوب في المسار). لو وقعت بتستنى ثانيتين وتكمل.<br></span>' +
     '<span class="kb">القفز: <kbd>مسافة</kbd> أو <kbd>↑</kbd> (خفيف = قصيرة، ممسوك = عالية)<br>' +
     'الانزلاق: <kbd>↓</kbd> &nbsp; التسريع: <kbd>→</kbd> &nbsp; شحن أسرع: <kbd>←</kbd> (بيبطّأ شوية) &nbsp; إيقاف: <kbd>P</kbd><br>كعبلة: <kbd>E</kbd> &nbsp; مسك: <kbd>R</kbd> (امسك) &nbsp; طوبة: <kbd>Q</kbd></span>' +
-    '<span class="tc">يمينك: قفز (خفيف = قصيرة، ممسوك = عالية) وانزلاق وطوبة. شمالك: شحن وتسريع وكعبلة ومسك.</span>',
+    '<span class="tc">يمينك: قفز (خفيف = قصيرة، ممسوك = عالية) وانزلاق وطوبة. شمالك: شحن وتسريع وكعبلة ومسك.</span></details>',
     'ابدأ الجري', true);
 }
 function showPaused(){ showOverlay('متوقفة', 'خد نفسك، واللعبة مستنياك.', 'كمّل'); }

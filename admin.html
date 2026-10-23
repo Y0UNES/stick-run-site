@@ -6,52 +6,82 @@
 <meta name="robots" content="noindex,nofollow">
 <title>لوحة تحكم ستيك رن</title>
 <style>
-  :root{--bg:#f6f3ea;--card:#fff;--ink:#1c1c1c;--muted:#6b665a;--line:#d9d3c2;--accent:#2a5bd7;--bad:#c0392b;--warn:#c27c0e;--good:#1e8449}
-  @media (prefers-color-scheme:dark){:root{--bg:#16181d;--card:#1f232b;--ink:#ecebe6;--muted:#9a9a93;--line:#323844;--accent:#6c97ff;--bad:#ff6b5c;--warn:#f0a93b;--good:#4cc38a}}
+  :root{--bg:#f6f3ea;--card:#fff;--ink:#1c1c1c;--muted:#6b665a;--line:#d9d3c2;--accent:#2a5bd7;--bad:#c0392b;--warn:#c27c0e;--good:#1e8449;--veil:rgba(20,20,20,.5)}
+  @media (prefers-color-scheme:dark){:root{--bg:#16181d;--card:#1f232b;--ink:#ecebe6;--muted:#9a9a93;--line:#323844;--accent:#6c97ff;--bad:#ff6b5c;--warn:#f0a93b;--good:#4cc38a;--veil:rgba(0,0,0,.6)}}
   *{box-sizing:border-box}
+  [hidden]{display:none !important}
+  html{scroll-padding-top:120px}
   body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 "Cairo","Segoe UI",Tahoma,sans-serif}
-  button{font:inherit;cursor:pointer;border:1.5px solid var(--ink);background:var(--card);color:var(--ink);border-radius:9px;padding:5px 12px}
+  button{font:inherit;cursor:pointer;border:1.5px solid var(--ink);background:var(--card);color:var(--ink);border-radius:9px;padding:5px 14px;min-height:36px;transition:filter .12s,background .12s}
+  button:hover:not(:disabled){filter:brightness(.94)}
   button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
   button.danger{background:var(--bad);border-color:var(--bad);color:#fff}
   button.good{background:var(--good);border-color:var(--good);color:#fff}
   button:disabled{opacity:.5;cursor:default}
-  input,textarea,select{font:inherit;padding:6px 10px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink)}
-  #gate{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px;text-align:center}
-  header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;background:var(--card);border-bottom:1.5px solid var(--line);position:sticky;top:0;z-index:5}
+  input,textarea,select{font:inherit;padding:6px 10px;border:1.5px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);min-height:36px;max-width:100%}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+  label{cursor:pointer}
+  #gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+  .gatecard{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:22px 20px;width:min(380px,100%);display:flex;flex-direction:column;gap:12px;text-align:center}
+  .gatecard h1{margin:0;font-size:22px}
+  .gatecard form{display:flex;flex-direction:column;gap:10px}
+  header{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 14px;background:var(--card);border-bottom:1.5px solid var(--line)}
+  .bar{position:sticky;top:0;z-index:6}
   header h1{font-size:18px;margin:0;flex:1}
-  nav{display:flex;gap:6px;flex-wrap:wrap;padding:10px 14px}
-  nav button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+  nav{display:flex;gap:6px;padding:8px 14px;overflow-x:auto;background:var(--bg);border-bottom:1px solid var(--line);scrollbar-width:thin}
+  nav button{flex:none;border-radius:999px;border-color:var(--line)}
+  nav button[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
   .badge{display:inline-block;min-width:20px;padding:0 6px;margin-inline-start:6px;border-radius:10px;background:var(--bad);color:#fff;font-size:12px;text-align:center}
-  main{padding:0 14px 40px;max-width:1100px;margin:0 auto}
+  main{padding:10px 14px 60px;max-width:1100px;margin:0 auto}
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
-  .stat{background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px}
+  .stat{background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;text-align:start;display:block;width:100%;font:inherit;min-height:0}
+  button.stat:hover{border-color:var(--ink)}
   .stat b{display:block;font-size:26px;line-height:1.2}
+  .stat.hot{border-color:var(--bad)} .stat.hot b{color:var(--bad)}
   .stat span{color:var(--muted);font-size:13px}
   .card{background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;margin:10px 0}
   .card.high{border-color:var(--bad)} .card.warn{border-color:var(--warn)}
   .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  .grow{flex:1}
+  .grow{flex:1;min-width:0}
   .muted{color:var(--muted);font-size:13px}
+  .empty{padding:26px 12px;text-align:center;color:var(--muted);border:1.5px dashed var(--line);border-radius:12px;margin:10px 0}
+  .loading{padding:26px 12px;text-align:center;color:var(--muted)}
   .tag{display:inline-block;padding:0 8px;border-radius:8px;border:1px solid var(--line);font-size:12px;margin-inline-end:4px}
   .tag.bad{border-color:var(--bad);color:var(--bad)} .tag.good{border-color:var(--good);color:var(--good)} .tag.warn{border-color:var(--warn);color:var(--warn)}
   .kv{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;font-size:13px;margin:6px 0}
   .kv dt{color:var(--muted)} .kv dd{margin:0;word-break:break-word}
-  .chat{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow:auto;padding:6px}
+  details.more{margin:6px 0}
+  details.more summary{cursor:pointer;color:var(--muted);font-size:13px}
+  .chat{display:flex;flex-direction:column;gap:6px;max-height:55vh;overflow:auto;padding:6px}
   .m{max-width:80%;padding:6px 12px;border-radius:12px;border:1.5px solid var(--line);white-space:pre-wrap;word-break:break-word}
   .m.user{align-self:flex-start} .m.admin{align-self:flex-end;background:var(--accent);border-color:var(--accent);color:#fff}
-  table{width:100%;border-collapse:collapse;font-size:13px} th,td{padding:4px 8px;border-bottom:1px solid var(--line);text-align:start}
-  #toast{position:fixed;bottom:16px;inset-inline:16px;max-width:520px;margin:auto;background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:12px;z-index:20;display:none}
-  h2{font-size:17px;margin:14px 0 4px}
+  .tblw{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:13px} th,td{padding:4px 8px;border-bottom:1px solid var(--line);text-align:start;white-space:nowrap}
+  tr:last-child td{border-bottom:0}
+  #toast{position:fixed;bottom:16px;inset-inline:16px;max-width:520px;margin:auto;background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:12px;z-index:30;display:none;border-inline-start:6px solid var(--good)}
+  #toast.err{border-inline-start-color:var(--bad)}
+  h2{font-size:17px;margin:18px 0 4px}
+  .modal-bg{position:fixed;inset:0;background:var(--veil);display:flex;align-items:center;justify-content:center;padding:14px;z-index:20}
+  .modal{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:16px 18px;width:min(440px,100%);max-height:100%;overflow:auto;display:flex;flex-direction:column;gap:10px}
+  .modal h3{margin:0;font-size:18px}
+  .modal p{margin:0;color:var(--muted)}
+  .modal .f{display:flex;flex-direction:column;gap:3px}
+  .modal .f > span{font-size:13px;color:var(--muted)}
+  .modal .f.chk{flex-direction:row;align-items:flex-start;gap:8px}
+  .modal .f.chk span{color:var(--ink);font-size:14px}
+  .modal .f.chk input{min-height:0;width:18px;height:18px;margin-top:3px;flex:none}
+  .modal .acts{display:flex;gap:8px;justify-content:flex-start;flex-wrap:wrap;margin-top:4px}
+  @media (max-width:560px){ .row > button{flex:1 1 auto} .stat b{font-size:22px} header h1{flex-basis:100%;font-size:16px} .card.row > .grow{flex-basis:100%} #who{flex:1} }
 </style>
 </head>
 <body>
-<div id="gate"><h1>لوحة تحكم ستيك رن</h1><p id="gateMsg" class="muted">جاري التحميل...</p><div id="gateForm" class="row" hidden style="flex-direction:column;align-items:stretch;width:min(320px,100%)"><input id="gEmail" type="email" placeholder="الإيميل" dir="ltr"><input id="gPass" type="password" placeholder="الباسورد" dir="ltr"><button id="gateBtn" class="primary">دخول</button></div></div>
+<div id="gate"><div class="gatecard"><h1>لوحة تحكم ستيك رن</h1><p id="gateMsg" class="muted">جاري التحميل...</p><form id="gateForm" hidden><input id="gEmail" type="email" placeholder="الإيميل" dir="ltr" autocomplete="username"><input id="gPass" type="password" placeholder="الباسورد" dir="ltr" autocomplete="current-password"><button id="gateBtn" type="submit" class="primary">دخول</button></form></div></div>
 <div id="app" hidden>
-  <header><h1>لوحة تحكم ستيك رن</h1><span id="who" class="muted"></span><button id="sound" title="صوت التنبيهات">الصوت: شغال</button><button id="out">خروج</button></header>
-  <nav id="tabs"></nav>
+  <div class="bar"><header><h1>لوحة تحكم ستيك رن</h1><span id="who" class="muted"></span><button id="sound" title="صوت التنبيهات">الصوت: شغال</button><button id="out">خروج</button></header>
+  <nav id="tabs" aria-label="الأقسام"></nav></div>
   <main id="main"></main>
 </div>
-<div id="toast" role="status"></div>
+<div id="toast" role="status" aria-live="polite"></div>
 <script src="config.js"></script>
 <script src="vendor/supabase.js"></script>
 <script>
@@ -67,7 +97,7 @@ function h(tag, attrs, ...kids){
   if(attrs) for(const k in attrs){
     const v = attrs[k];
     if(k === 'class') e.className = v;
-    else if(k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else if(k.startsWith('on')){ if(typeof v === 'function') e.addEventListener(k.slice(2), v); }
     else if(v !== false && v !== null && v !== undefined) e.setAttribute(k, v === true ? '' : v);
   }
   for(const kid of kids.flat(Infinity)){ if(kid === null || kid === undefined || kid === false) continue; e.append(kid.nodeType ? kid : document.createTextNode(String(kid))); }
@@ -77,18 +107,64 @@ async function rpc(name, args){ const { data, error } = await sb.rpc(name, args 
 async function tbl(q){ const { data, error } = await q; if(error) throw new Error(error.message || String(error)); return data || []; }
 const fmt = d => d ? new Date(d).toLocaleString('ar-EG', { dateStyle:'short', timeStyle:'short' }) : '—';
 let toastT = null;
-function toast(t){ const el = $('toast'); el.textContent = t; el.style.display = 'block'; clearTimeout(toastT); toastT = setTimeout(() => { el.style.display = 'none'; }, 3500); }
-const run = async (fn, ok) => { try{ const r = await fn(); if(ok) toast(ok); return r; }catch(e){ toast('خطأ: ' + (e.message || e)); throw e; } };
+function toast(t, bad){ const el = $('toast'); el.textContent = t; el.classList.toggle('err', !!bad); el.style.display = 'block'; clearTimeout(toastT); toastT = setTimeout(() => { el.style.display = 'none'; }, bad ? 6000 : 3500); }
+const run = async (fn, ok) => { try{ const r = await fn(); if(ok) toast(ok); return r; }catch(e){ toast('خطأ: ' + (e.message || e), true); throw e; } };
+
+/* ---------- dialogs: a proper form instead of prompt() / confirm() ---------- */
+// fields: [{ key, label, type:'text'|'number'|'checkbox'|'select', options, value, placeholder, required }]; resolves with { key:value } or null when cancelled
+function ask(title, fields, o){
+  o = o || {};
+  return new Promise(resolve => {
+    const prev = document.activeElement;
+    const inputs = {};
+    const form = h('form', { class:'modal', role:'dialog', 'aria-modal':'true', 'aria-label':title },
+      h('h3', null, title), o.text ? h('p', null, o.text) : null,
+      (fields || []).map(f => {
+        let inp;
+        if(f.type === 'select') inp = h('select', null, (f.options || []).map(([v, l]) => h('option', { value:v }, l)));
+        else if(f.type === 'checkbox') inp = h('input', { type:'checkbox' });
+        else inp = h('input', { type:f.type || 'text', step:f.type === 'number' ? 'any' : false, placeholder:f.placeholder || '', autocomplete:'off' });
+        if(f.type === 'checkbox') inp.checked = !!f.value; else if(f.value !== undefined) inp.value = f.value;
+        inputs[f.key] = { el:inp, f };
+        return f.type === 'checkbox' ? h('label', { class:'f chk' }, inp, h('span', null, f.label)) : h('label', { class:'f' }, h('span', null, f.label), inp);
+      }),
+      h('div', { class:'acts' },
+        h('button', { type:'submit', class:o.danger ? 'danger' : 'primary' }, o.ok || 'تأكيد'),
+        h('button', { type:'button', onclick:() => close(null) }, 'إلغاء')));
+    const bg = h('div', { class:'modal-bg' }, form);
+    function close(v){ bg.remove(); document.removeEventListener('keydown', onKey, true); if(prev && prev.focus) prev.focus(); resolve(v); }
+    function onKey(e){ if(e.key === 'Escape'){ e.preventDefault(); close(null); } }
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const out = {};
+      for(const k in inputs){
+        const { el, f } = inputs[k];
+        let v = f.type === 'checkbox' ? el.checked : el.value.trim();
+        if(f.type === 'number'){ v = parseFloat(el.value); if(isNaN(v)){ if(f.required){ el.focus(); toast('اكتب رقم صح في: ' + f.label, true); return; } v = null; } }
+        else if(f.required && v === ''){ el.focus(); toast('لازم تكتب: ' + f.label, true); return; }
+        out[k] = v;
+      }
+      close(out);
+    });
+    bg.addEventListener('mousedown', e => { if(e.target === bg) close(null); });
+    document.addEventListener('keydown', onKey, true);
+    document.body.append(bg);
+    const first = Object.values(inputs)[0];
+    (first ? first.el : form.querySelector('button[type=submit]')).focus();
+  });
+}
+const sure = (title, text, ok, danger) => ask(title, [], { text, ok, danger }).then(r => !!r);
 
 /* ---------- gate ---------- */
 function showGate(msg, canSignIn){ $('gate').hidden = false; $('app').hidden = true; $('gateMsg').textContent = msg; $('gateForm').hidden = !canSignIn; }
-async function gateLogin(){
+async function gateLogin(e){
+  if(e) e.preventDefault();
+  $('gateBtn').disabled = true;
   const { error } = await sb.auth.signInWithPassword({ email:$('gEmail').value.trim().toLowerCase(), password:$('gPass').value });
-  if(error){ $('gateMsg').textContent = 'الإيميل أو الباسورد غلط'; return; }
+  if(error){ $('gateMsg').textContent = 'الإيميل أو الباسورد غلط'; $('gateBtn').disabled = false; return; }
   location.reload();
 }
-$('gateBtn').addEventListener('click', gateLogin);
-$('gPass').addEventListener('keydown', e => { if(e.key === 'Enter') gateLogin(); });
+$('gateForm').addEventListener('submit', gateLogin);
 $('out').addEventListener('click', async () => { await sb.auth.signOut(); location.reload(); });
 async function boot(){
   try{
@@ -113,13 +189,14 @@ function beep(){
 
 /* ---------- tabs ---------- */
 const TABS = [['overview', 'نظرة عامة'], ['players', 'اللاعبين'], ['alerts', 'التنبيهات'], ['names', 'الأسماء'], ['support', 'الدعم'], ['races', 'السباقات'], ['bans', 'الحظر'], ['settings', 'الإعدادات']];
-let tab = 'overview', counts = {};
+let tab = 'overview', counts = {}, showSeq = 0;
 function buildTabs(){
   const nav = $('tabs'); nav.textContent = '';
   for(const [id, label] of TABS){
     const n = id === 'alerts' ? counts.open_alerts : id === 'names' ? counts.pending_names : id === 'support' ? counts.unread_support : 0;
     nav.append(h('button', { 'aria-pressed':id === tab ? 'true' : 'false', onclick:() => show(id) }, label, n ? h('span', { class:'badge' }, n) : null));
   }
+  const on = nav.querySelector('[aria-pressed=true]'); if(on && on.scrollIntoView) on.scrollIntoView({ block:'nearest', inline:'nearest' });
 }
 async function refreshBadges(){
   try{
@@ -133,8 +210,13 @@ async function refreshBadges(){
 }
 async function show(id){
   tab = id; buildTabs();
-  const main = $('main'); main.textContent = '';
-  try{ await RENDER[id](main); }catch(e){ main.append(h('div', { class:'card high' }, 'مشكلة: ' + (e.message || e))); }
+  const seq = ++showSeq, main = $('main');
+  main.textContent = '';
+  const ld = h('div', { class:'loading' }, 'جاري التحميل...'); main.append(ld);
+  const box = h('div');
+  try{ await RENDER[id](box); }catch(e){ box.append(h('div', { class:'card high' }, 'مشكلة: ' + (e.message || e))); }
+  if(seq !== showSeq) return;                     // a newer tab was opened meanwhile
+  main.textContent = ''; main.append(box);
 }
 
 /* ---------- helpers ---------- */
@@ -147,34 +229,39 @@ async function loadNames(ids){
 }
 const nm = id => names[id] || (id ? String(id).slice(0, 8) : '—');
 function kv(obj){ const dl = h('dl', { class:'kv' }); for(const k in obj){ dl.append(h('dt', null, k), h('dd', null, obj[k] === null || obj[k] === undefined || obj[k] === '' ? '—' : obj[k])); } return dl; }
+const empty = t => h('div', { class:'empty' }, t);
 
 /* ---------- overview ---------- */
 async function renderOverview(box){
   const o = await rpc('admin_overview'); counts = o;
-  const stats = [['اللاعبين', o.players], ['أونلاين (5 د)', o.online_5m], ['جداد 24 ساعة', o.new_24h], ['عملات في المحافظ', o.coins_in_wallets], ['سباقات 24 ساعة', o.races_24h], ['تنبيهات مفتوحة', o.open_alerts], ['أسماء مستنية', o.pending_names], ['رسايل دعم جديدة', o.unread_support], ['حظر شغال', o.active_bans]];
-  box.append(h('div', { class:'grid' }, stats.map(([l, v]) => h('div', { class:'stat' }, h('b', null, v), h('span', null, l)))));
+  const stats = [['اللاعبين', o.players, 'players'], ['أونلاين (5 د)', o.online_5m, 'players'], ['جداد 24 ساعة', o.new_24h, 'players'], ['عملات في المحافظ', o.coins_in_wallets, null], ['سباقات 24 ساعة', o.races_24h, 'races'],
+    ['تنبيهات مفتوحة', o.open_alerts, 'alerts', o.open_alerts > 0], ['أسماء مستنية', o.pending_names, 'names', o.pending_names > 0], ['رسايل دعم جديدة', o.unread_support, 'support', o.unread_support > 0], ['حظر شغال', o.active_bans, 'bans']];
+  box.append(h('div', { class:'grid' }, stats.map(([l, v, to, hot]) => h(to ? 'button' : 'div', { class:'stat' + (hot ? ' hot' : ''), type:to ? 'button' : false, onclick:to ? () => show(to) : false }, h('b', null, v ?? 0), h('span', null, l)))));
   const alerts = await tbl(sb.from('alerts').select('*').in('status', ['open', 'reviewing']).order('id', { ascending:false }).limit(5));
   await loadNames(alerts.map(a => a.user_id));
   box.append(h('h2', null, 'آخر التنبيهات المفتوحة'));
-  if(!alerts.length) box.append(h('div', { class:'muted' }, 'مفيش تنبيهات. كله هادي.'));
+  if(!alerts.length) box.append(empty('مفيش تنبيهات. كله هادي.'));
   for(const a of alerts) box.append(h('div', { class:'card ' + (a.severity === 'high' ? 'high' : '') }, h('b', null, ALERT_NAMES[a.kind] || a.kind), ' — ', nm(a.user_id), ' · ', fmt(a.created_at)));
 }
 
 /* ---------- players ---------- */
 let playerQ = '';
 async function renderPlayers(box){
-  const inp = h('input', { placeholder:'ابحث بالاسم أو الإيميل', value:playerQ, class:'grow' });
+  const inp = h('input', { placeholder:'ابحث بالاسم أو الإيميل', value:playerQ, class:'grow', type:'search' });
   const go = () => { playerQ = inp.value.trim(); show('players'); };
   inp.addEventListener('keydown', e => { if(e.key === 'Enter') go(); });
-  box.append(h('div', { class:'row', style:'margin:10px 0' }, inp, h('button', { class:'primary', onclick:go }, 'بحث')));
+  box.append(h('div', { class:'row', style:'margin:0 0 10px' }, inp, h('button', { class:'primary', onclick:go }, 'بحث'), playerQ ? h('button', { onclick:() => { playerQ = ''; show('players'); } }, 'مسح') : null));
   const list = await rpc('admin_players', { p_q:playerQ || null, p_limit:100 });
   box.append(h('div', { class:'muted' }, list.length + ' لاعب'));
+  if(!list.length) box.append(empty('مفيش لاعبين مطابقين.'));
   for(const p of list){
     const banned = !!p.ban;
     box.append(h('div', { class:'card' + (banned ? ' high' : (p.flagged ? ' warn' : '')) },
       h('div', { class:'row' }, h('b', { class:'grow' }, p.name), h('span', null, p.coins + ' عملة'),
         banned ? h('span', { class:'tag bad' }, 'محظور: ' + (p.ban.reason || '')) : null, p.flagged && !banned ? h('span', { class:'tag warn' }, 'مشبوه') : null),
-      kv({ 'الإيميل':p.email, 'البلد / المنطقة':[p.country, p.tz].filter(Boolean).join(' / '), 'الجهاز':p.device, 'الشاشة':p.screen, 'اللغة':p.lang, 'جاي من':p.src, 'الجلسات':p.sessions, 'آخر ظهور':fmt(p.last_seen), 'انضم':fmt(p.created_at), 'وافق على الإشعار':p.consent ? 'أيوه' : 'لأ' }),
+      h('div', { class:'muted' }, [p.email, 'آخر ظهور ' + fmt(p.last_seen)].filter(Boolean).join(' · ')),
+      h('details', { class:'more' }, h('summary', null, 'تفاصيل الجهاز والحساب'),
+        kv({ 'الإيميل':p.email, 'البلد / المنطقة':[p.country, p.tz].filter(Boolean).join(' / '), 'الجهاز':p.device, 'الشاشة':p.screen, 'اللغة':p.lang, 'جاي من':p.src, 'الجلسات':p.sessions, 'آخر ظهور':fmt(p.last_seen), 'انضم':fmt(p.created_at), 'وافق على الإشعار':p.consent ? 'أيوه' : 'لأ' })),
       h('div', { class:'row' },
         h('button', { class:'good', onclick:() => topup(p) }, 'شحن'),
         h('button', { onclick:() => adjust(p) }, 'تعديل رصيد'),
@@ -184,37 +271,41 @@ async function renderPlayers(box){
   }
 }
 async function topup(p){
-  const egp = parseFloat(prompt('المبلغ بالجنيه (100 عملة = 10 جنيه)؟'));
-  if(!(egp > 0)) return;
-  const method = prompt('وسيلة الدفع (instapay / vodafone / ...)؟') || '';
-  const ref = prompt('رقم العملية / ملاحظة؟') || '';
-  const r = await run(() => rpc('admin_topup', { p_uid:p.id, p_egp:egp, p_method:method, p_ref:ref }), 'اتشحن');
+  const r0 = await ask('شحن رصيد ' + p.name, [
+    { key:'egp', label:'المبلغ بالجنيه (100 عملة = 10 جنيه)', type:'number', required:true, placeholder:'مثلاً 50' },
+    { key:'method', label:'وسيلة الدفع', type:'select', options:[['instapay', 'InstaPay'], ['vodafone', 'فودافون كاش'], ['other', 'أخرى']] },
+    { key:'ref', label:'رقم العملية / ملاحظة' }], { ok:'اشحن', text:'هيتضاف الرصيد فورًا وهيتسجل في سجل العملات.' });
+  if(!r0 || !(r0.egp > 0)) return;
+  const r = await run(() => rpc('admin_topup', { p_uid:p.id, p_egp:r0.egp, p_method:r0.method, p_ref:r0.ref }), 'اتشحن');
   if(r) toast('اتضاف ' + r.coins_added + ' عملة. الرصيد الجديد ' + r.balance);
   show('players');
 }
 async function adjust(p){
-  const d = parseInt(prompt('كام عملة تزود (موجب) أو تنقص (سالب)؟'), 10);
+  const r0 = await ask('تعديل رصيد ' + p.name, [
+    { key:'d', label:'كام عملة تزود (موجب) أو تنقص (سالب)؟', type:'number', required:true },
+    { key:'note', label:'السبب', required:true }], { ok:'عدّل' });
+  const d = r0 && Math.trunc(r0.d);
   if(!d) return;
-  const note = prompt('السبب؟') || '';
-  await run(() => rpc('admin_adjust', { p_uid:p.id, p_delta:d, p_note:note }), 'اتعدّل');
+  await run(() => rpc('admin_adjust', { p_uid:p.id, p_delta:d, p_note:r0.note }), 'اتعدّل');
   show('players');
 }
 async function ban(p){
-  const reason = (prompt('سبب الحظر (هيظهر للاعب)؟') || '').trim();
-  if(!reason) return;
-  const wide = confirm('تحظر الجهاز والشبكة كمان؟\nOK = أيوه (حساب + جهاز + شبكة)\nCancel = الحساب بس');
-  const fp = wide && confirm('تحظر بصمة الجهاز التقريبية كمان؟ (أقوى، بس ممكن تمسك أجهزة شبه بعض)');
-  const n = await run(() => rpc('admin_ban_user', { p_uid:p.id, p_reason:reason, p_device:wide, p_ip:wide, p_fp:fp }), 'اتحظر');
+  const r0 = await ask('حظر ' + p.name, [
+    { key:'reason', label:'سبب الحظر (هيظهر للاعب)', required:true },
+    { key:'wide', label:'احظر الجهاز والشبكة كمان (مش الحساب بس)', type:'checkbox', value:true },
+    { key:'fp', label:'احظر بصمة الجهاز التقريبية كمان (أقوى، بس ممكن تمسك أجهزة شبه بعض)', type:'checkbox' }], { ok:'احظر', danger:true });
+  if(!r0) return;
+  const n = await run(() => rpc('admin_ban_user', { p_uid:p.id, p_reason:r0.reason, p_device:r0.wide, p_ip:r0.wide, p_fp:r0.wide && r0.fp }), 'اتحظر');
   if(n) toast('اتعمل ' + n + ' حظر');
   show('players');
 }
-async function unban(p){ if(!confirm('تفك كل الحظر على ' + p.name + '؟')) return; await run(() => rpc('admin_unban_user', { p_uid:p.id }), 'اتفك الحظر'); show('players'); }
+async function unban(p){ if(!await sure('فك الحظر', 'تفك كل الحظر على ' + p.name + '؟', 'فك الحظر')) return; await run(() => rpc('admin_unban_user', { p_uid:p.id }), 'اتفك الحظر'); show('players'); }
 async function ledgerOf(p, box){
   const rows = await tbl(sb.from('ledger').select('*').eq('user_id', p.id).order('id', { ascending:false }).limit(50));
   const audit = await rpc('admin_wallet_audit', { p_uid:p.id });
-  const t = h('table', null, h('tr', null, h('th', null, 'التاريخ'), h('th', null, 'التغيير'), h('th', null, 'السبب'), h('th', null, 'الرصيد')),
-    rows.map(r => h('tr', null, h('td', null, fmt(r.created_at)), h('td', null, (r.delta > 0 ? '+' : '') + r.delta), h('td', null, r.reason + (r.ref ? ' · ' + r.ref : '')), h('td', null, r.balance_after))));
-  const card = h('div', { class:'card' }, h('b', null, 'سجل عملات ' + p.name), ' ', h('span', { class:'tag ' + (audit.ok ? 'good' : 'bad') }, audit.ok ? 'الرصيد مطابق للسجل' : 'الرصيد مش مطابق! ' + audit.wallet + ' ≠ ' + audit.ledger_sum), t, h('button', { onclick:() => card.remove() }, 'إغلاق'));
+  const t = h('div', { class:'tblw' }, h('table', null, h('tr', null, h('th', null, 'التاريخ'), h('th', null, 'التغيير'), h('th', null, 'السبب'), h('th', null, 'الرصيد')),
+    rows.map(r => h('tr', null, h('td', null, fmt(r.created_at)), h('td', null, (r.delta > 0 ? '+' : '') + r.delta), h('td', null, r.reason + (r.ref ? ' · ' + r.ref : '')), h('td', null, r.balance_after)))));
+  const card = h('div', { class:'card' }, h('div', { class:'row' }, h('b', { class:'grow' }, 'سجل عملات ' + p.name), h('span', { class:'tag ' + (audit.ok ? 'good' : 'bad') }, audit.ok ? 'الرصيد مطابق للسجل' : 'الرصيد مش مطابق! ' + audit.wallet + ' ≠ ' + audit.ledger_sum), h('button', { onclick:() => card.remove() }, 'إغلاق')), t);
   box.prepend(card); card.scrollIntoView({ behavior:'smooth' });
 }
 
@@ -223,7 +314,7 @@ const ALERT_NAMES = { coins_implausible:'عملات أكتر من الممكن',
 async function renderAlerts(box){
   const rows = await tbl(sb.from('alerts').select('*').in('status', ['open', 'reviewing']).order('id', { ascending:false }).limit(100));
   await loadNames(rows.map(a => a.user_id));
-  if(!rows.length) box.append(h('div', { class:'card' }, 'مفيش تنبيهات مفتوحة.'));
+  if(!rows.length) box.append(empty('مفيش تنبيهات مفتوحة.'));
   for(const a of rows){
     const d = a.details || {};
     const detail = {};
@@ -239,42 +330,54 @@ async function renderAlerts(box){
   }
 }
 async function verdict(a, cheat){
-  const note = prompt(cheat ? 'ملاحظة (بتظهر كسبب الحظر)؟' : 'ملاحظة؟') || '';
-  if(cheat && !confirm('تأكيد: غش؟ هيتحظر اللاعب وعملاته هتتصفّر والباقيين هياخدوا تعويض.')) return;
-  const r = await run(() => rpc('admin_race_verdict', { p_race:a.race_id, p_cheat:cheat, p_note:note }), 'اتنفذ');
+  const r0 = await ask(cheat ? 'تأكيد: غش' : 'تأكيد: السباق سليم',
+    [{ key:'note', label:cheat ? 'ملاحظة (بتظهر كسبب الحظر)' : 'ملاحظة' }],
+    { ok:cheat ? 'أيوه غش' : 'سليم', danger:cheat, text:cheat ? 'هيتحظر اللاعب وعملاته هتتصفّر والباقيين هياخدوا تعويض.' : 'هتتدفع الجايزة للفايز.' });
+  if(!r0) return;
+  const r = await run(() => rpc('admin_race_verdict', { p_race:a.race_id, p_cheat:cheat, p_note:r0.note }), 'اتنفذ');
   if(cheat && r) toast('اتعوّض ' + r.compensated + ' لاعب');
-  refreshBadges(); show('alerts');
+  refreshBadges(); show(tab === 'races' ? 'races' : 'alerts');
 }
-async function setAlert(a, status){ const note = prompt('ملاحظة؟') || ''; await run(() => rpc('admin_alert_set', { p_id:a.id, p_status:status, p_note:note }), 'تمام'); refreshBadges(); show('alerts'); }
+async function setAlert(a, status){
+  const r0 = await ask(status === 'confirmed' ? 'تأكيد التنبيه' : 'مفيش مشكلة', [{ key:'note', label:'ملاحظة' }], { ok:'تمام' });
+  if(!r0) return;
+  await run(() => rpc('admin_alert_set', { p_id:a.id, p_status:status, p_note:r0.note }), 'تمام'); refreshBadges(); show('alerts');
+}
 
 /* ---------- names ---------- */
 async function renderNames(box){
   const rows = await tbl(sb.from('name_requests').select('*').eq('status', 'pending').order('id'));
   await loadNames(rows.map(r => r.user_id));
-  if(!rows.length) box.append(h('div', { class:'card' }, 'مفيش أسماء مستنية.'));
+  if(!rows.length) box.append(empty('مفيش أسماء مستنية.'));
   for(const r of rows){
     box.append(h('div', { class:'card' }, h('div', { class:'row' }, h('b', { class:'grow' }, r.requested), h('span', { class:'muted' }, 'الاسم الحالي: ' + nm(r.user_id) + ' · ' + fmt(r.created_at))),
       h('div', { class:'row' }, h('button', { class:'good', onclick:async () => { await run(() => rpc('admin_decide_name', { p_id:r.id, p_approve:true, p_reason:null }), 'اتوافق'); refreshBadges(); show('names'); } }, 'وافق'),
-        h('button', { class:'danger', onclick:async () => { const why = prompt('سبب الرفض؟') || ''; await run(() => rpc('admin_decide_name', { p_id:r.id, p_approve:false, p_reason:why }), 'اترفض'); refreshBadges(); show('names'); } }, 'ارفض'))));
+        h('button', { class:'danger', onclick:async () => {
+          const r0 = await ask('رفض الاسم «' + r.requested + '»', [{ key:'why', label:'سبب الرفض (هيوصل للاعب)' }], { ok:'ارفض', danger:true });
+          if(!r0) return;
+          await run(() => rpc('admin_decide_name', { p_id:r.id, p_approve:false, p_reason:r0.why }), 'اترفض'); refreshBadges(); show('names');
+        } }, 'ارفض'))));
   }
 }
 
 /* ---------- support ---------- */
 async function renderSupport(box){
   const threads = await rpc('admin_support_threads');
-  if(!threads.length) box.append(h('div', { class:'card' }, 'مفيش رسايل.'));
+  if(!threads.length) box.append(empty('مفيش رسايل.'));
   for(const t of threads){
     box.append(h('div', { class:'card' }, h('div', { class:'row' }, h('b', { class:'grow' }, t.name), t.unread ? h('span', { class:'badge' }, t.unread) : null, t.banned ? h('span', { class:'tag bad' }, 'محظور') : null, h('span', { class:'muted' }, fmt(t.last_at))),
       h('div', { class:'muted' }, t.email), h('div', null, t.last_body), h('button', { class:'primary', onclick:() => openChat(t.user_id, t.name) }, 'افتح المحادثة')));
   }
 }
 async function openChat(uid, name){
-  tab = 'support'; buildTabs();
+  tab = 'support'; buildTabs(); showSeq++;
   const box = $('main'); box.textContent = '';
   const msgs = await tbl(sb.from('support_messages').select('*').eq('user_id', uid).order('id'));
-  const chat = h('div', { class:'chat' }, msgs.map(m => h('div', { class:'m ' + m.sender }, m.body)));
-  const ta = h('textarea', { rows:'2', class:'grow', maxlength:'1000', placeholder:'اكتب ردك...' });
-  const send = h('button', { class:'primary', onclick:async () => { const t = ta.value.trim(); if(!t) return; await run(() => rpc('admin_reply', { p_uid:uid, p_body:t }), 'اتبعت'); refreshBadges(); openChat(uid, name); } }, 'ابعت');
+  const chat = h('div', { class:'chat' }, msgs.length ? msgs.map(m => h('div', { class:'m ' + m.sender }, m.body)) : h('div', { class:'muted' }, 'مفيش رسايل لسه.'));
+  const ta = h('textarea', { rows:'2', class:'grow', maxlength:'1000', placeholder:'اكتب ردك... (Ctrl+Enter للإرسال)' });
+  const doSend = async () => { const t = ta.value.trim(); if(!t) return; send.disabled = true; try{ await run(() => rpc('admin_reply', { p_uid:uid, p_body:t }), 'اتبعت'); }catch(e){ send.disabled = false; return; } refreshBadges(); openChat(uid, name); };
+  const send = h('button', { class:'primary', onclick:doSend }, 'ابعت');
+  ta.addEventListener('keydown', e => { if(e.key === 'Enter' && (e.ctrlKey || e.metaKey)){ e.preventDefault(); doSend(); } });
   box.append(h('div', { class:'row' }, h('button', { onclick:() => show('support') }, 'رجوع'), h('b', null, name)), h('div', { class:'card' }, chat), h('div', { class:'row' }, ta, send));
   chat.scrollTop = chat.scrollHeight;
   sb.from('support_messages').update({ read_by_admin:true }).eq('user_id', uid).eq('sender', 'user').then(() => refreshBadges());   // opening a thread marks it read
@@ -285,12 +388,13 @@ async function renderRaces(box){
   const rows = await tbl(sb.from('races').select('*').order('created_at', { ascending:false }).limit(40));
   const players = rows.length ? await tbl(sb.from('race_players').select('*').in('race_id', rows.map(r => r.id))) : [];
   await loadNames(players.map(p => p.user_id));
+  if(!rows.length) box.append(empty('مفيش سباقات لسه.'));
   for(const r of rows){
     const ps = players.filter(p => p.race_id === r.id).sort((a, b) => (a.rank || 99) - (b.rank || 99));
     const cls = r.status === 'review' ? 'high' : (r.status === 'void' ? 'warn' : '');
     box.append(h('div', { class:'card ' + cls },
       h('div', { class:'row' }, h('b', { class:'grow' }, (r.room_code || '—') + ' · ' + r.length_m + ' م'), h('span', { class:'tag ' + (r.status === 'done' ? 'good' : (r.status === 'running' ? '' : 'bad')) }, r.status), h('span', { class:'muted' }, fmt(r.created_at))),
-      h('table', null, ps.map(p => h('tr', null, h('td', null, p.rank || '—'), h('td', null, nm(p.user_id)), h('td', null, p.finish_ms ? (p.finish_ms / 1000).toFixed(1) + ' ث' : 'ما وصلش'), h('td', null, p.dist_m ? p.dist_m + ' م' : ''), h('td', null, p.flagged ? h('span', { class:'tag bad' }, 'مشبوه') : null)))),
+      h('div', { class:'tblw' }, h('table', null, ps.map(p => h('tr', null, h('td', null, p.rank || '—'), h('td', null, nm(p.user_id)), h('td', null, p.finish_ms ? (p.finish_ms / 1000).toFixed(1) + ' ث' : 'ما وصلش'), h('td', null, p.dist_m ? p.dist_m + ' م' : ''), h('td', null, p.flagged ? h('span', { class:'tag bad' }, 'مشبوه') : null))))),
       (r.status === 'review' || r.status === 'done') ? h('div', { class:'row' }, h('button', { class:'danger', onclick:() => verdict({ race_id:r.id }, true) }, 'اعتبره غش'), r.status === 'review' ? h('button', { class:'good', onclick:() => verdict({ race_id:r.id }, false) }, 'سليم') : null) : null));
   }
 }
@@ -299,30 +403,38 @@ async function renderRaces(box){
 async function renderBans(box){
   const rows = await tbl(sb.from('bans').select('*').order('id', { ascending:false }).limit(100));
   await loadNames(rows.filter(b => b.kind === 'account').map(b => b.value));
-  if(!rows.length) box.append(h('div', { class:'card' }, 'مفيش حظر.'));
+  if(!rows.length) box.append(empty('مفيش حظر.'));
   for(const b of rows){
     box.append(h('div', { class:'card' }, h('div', { class:'row' }, h('span', { class:'tag ' + (b.active ? 'bad' : '') }, b.kind), h('b', { class:'grow' }, b.kind === 'account' ? nm(b.value) : String(b.value).slice(0, 14) + '…'), h('span', { class:'muted' }, fmt(b.created_at))),
-      h('div', null, b.reason), b.active ? h('button', { onclick:async () => { await run(() => rpc('admin_unban', { p_id:b.id }), 'اتفك'); show('bans'); } }, 'فك الحظر') : h('span', { class:'muted' }, 'اتفك ' + fmt(b.lifted_at))));
+      h('div', null, b.reason), b.active ? h('button', { onclick:async () => { if(!await sure('فك الحظر', 'تفك الحظر ده؟', 'فك')) return; await run(() => rpc('admin_unban', { p_id:b.id }), 'اتفك'); show('bans'); } }, 'فك الحظر') : h('span', { class:'muted' }, 'اتفك ' + fmt(b.lifted_at))));
   }
 }
 
 /* ---------- settings ---------- */
-const CFG_LABELS = { starting_coins:'عملات البداية', run_coin_rate:'كام عملة محفظة لكل عملة جولة', run_daily_cap:'حد العملات اليومي من اللعب', coin_price_egp:'سعر العملة بالجنيه', race_fee:'رسوم دخول السباق', race_prize:'جايزة الفايز', race_comp_bonus:'تعويض زيادة لو فيه غشاش', max_run_coins_per_100m:'أقصى عملات جولة لكل 100 متر', rename_price:'سعر بطاقة الاسم' };
+const CFG_LABELS = { starting_coins:'عملات البداية', run_coin_rate:'كام عملة محفظة لكل عملة جولة', run_daily_cap:'حد العملات اليومي من اللعب', coin_price_egp:'سعر العملة بالجنيه', race_fee:'رسوم دخول السباق', race_prize:'جايزة الفايز', race_comp_bonus:'تعويض زيادة لو فيه غشاش', max_run_coins_per_100m:'أقصى عملات جولة لكل 100 متر', rename_price:'سعر بطاقة الاسم',
+  daily_reward:'مكافأة كل تحدي يومي (عملات)', event_start_hour:'ساعة بداية المسابقة اليومية (بتوقيت القاهرة، 21 = 9 م)', event_minutes:'مدة المسابقة اليومية (بالدقايق)' };
+const EVENT_KEYS = ['daily_reward', 'event_start_hour', 'event_minutes'];
+function cfgRow(c){
+  const inp = h('input', { type:'number', step:'any', value:String(c.value), style:'width:110px', 'aria-label':CFG_LABELS[c.key] || c.key });
+  const save = h('button', { class:'primary', onclick:async () => { const v = parseFloat(inp.value); if(isNaN(v)){ toast('اكتب رقم صح', true); return; } await run(() => rpc('admin_set_config', { p_key:c.key, p_value:v }), 'اتحفظ'); } }, 'احفظ');
+  inp.addEventListener('keydown', e => { if(e.key === 'Enter') save.click(); });
+  return h('div', { class:'card row' }, h('span', { class:'grow' }, CFG_LABELS[c.key] || c.key), inp, save);
+}
 async function renderSettings(box){
   const cfg = await tbl(sb.from('config').select('*').order('key'));
   box.append(h('h2', null, 'الاقتصاد'));
-  for(const c of cfg){
-    const inp = h('input', { type:'number', step:'any', value:String(c.value), style:'width:110px' });
-    box.append(h('div', { class:'card row' }, h('span', { class:'grow' }, CFG_LABELS[c.key] || c.key), inp,
-      h('button', { class:'primary', onclick:async () => { const v = parseFloat(inp.value); if(isNaN(v)) return; await run(() => rpc('admin_set_config', { p_key:c.key, p_value:v }), 'اتحفظ'); } }, 'احفظ')));
-  }
+  for(const c of cfg) if(!EVENT_KEYS.includes(c.key)) box.append(cfgRow(c));
+  box.append(h('h2', null, 'المسابقة اليومية'));
+  const ev = cfg.filter(c => EVENT_KEYS.includes(c.key));
+  if(!ev.length) box.append(empty('مفيش إعدادات للمسابقة.'));
+  for(const c of ev) box.append(cfgRow(c));
   box.append(h('h2', null, 'أسعار المتجر (بالعملات)'));
   const cat = await tbl(sb.from('catalog').select('*').order('kind').order('sort'));
   for(const c of cat){
-    const inp = h('input', { type:'number', min:'0', value:String(c.price), style:'width:90px' });
+    const inp = h('input', { type:'number', min:'0', value:String(c.price), style:'width:90px', 'aria-label':'سعر ' + c.name });
     const on = h('input', { type:'checkbox' }); on.checked = !!c.active;
     box.append(h('div', { class:'card row' }, h('span', { class:'grow' }, c.name + ' (' + c.kind + ')'), inp, h('label', null, on, ' معروض'),
-      h('button', { class:'primary', onclick:async () => { const v = parseInt(inp.value, 10); if(isNaN(v) || v < 0) return; await run(() => rpc('admin_set_price', { p_item:c.id, p_price:v, p_active:on.checked }), 'اتحفظ'); } }, 'احفظ')));
+      h('button', { class:'primary', onclick:async () => { const v = parseInt(inp.value, 10); if(isNaN(v) || v < 0){ toast('اكتب سعر صح', true); return; } await run(() => rpc('admin_set_price', { p_item:c.id, p_price:v, p_active:on.checked }), 'اتحفظ'); } }, 'احفظ')));
   }
 }
 
