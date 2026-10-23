@@ -361,7 +361,7 @@ body.vs .keys .k-atk{display:inline}
   <header class="hud">
     <div class="item score"><span id="scoreLbl">النتيجة</span> <b id="score">0</b></div>
     <div class="item">أعلى نتيجة <b id="best">0</b></div>
-    <div class="item">العملات <b id="coins">0</b></div>
+    <div class="item">النقاط <b id="coins">0</b></div>
     <div class="item energy">الطاقة <span class="bar" id="ebar"><i id="efill"></i></span></div>
     <button class="mute" id="acctBtn" type="button">دخول</button>
     <button class="mute" id="fs" type="button" hidden>ملء الشاشة</button>
@@ -1323,7 +1323,7 @@ async function startRaceAsOwner(){
     const r = await rpc('race_start');
     if(r && r.error === 'insufficient'){
       const names = (r.users || []).map(id => { const m = net.room && net.room.members.find(x => x.id === id); return m ? m.name : 'لاعب'; });
-      net.err = 'رصيد ' + names.join(' و') + ' أقل من رسوم السباق (' + net.fee + ').';
+      net.err = 'رصيد ' + names.join(' و') + ' أقل من رسوم السباق (' + net.fee + '). العب سباق ضد الكمبيوتر وكسب عشان تاخد عملات.';
       net.blockUntil = performance.now() + 6000;
     }else if(r && r.race_id){
       if(net.chan && net.connected){ try{ net.chan.send({ type:'broadcast', event:'g', payload:{ race:r } }); }catch(e){} }
@@ -1705,21 +1705,35 @@ $('supClose').addEventListener('click', closeSupport);
 $('supSend').addEventListener('click', sendSupport);
 $('supText').addEventListener('keydown', e => e.stopPropagation());
 
-// the coins you collected in a run are turned into wallet coins by the server (scaled down, with a daily cap)
+// the coins picked up on the track are points only (they feed the score, the energy bar and the daily fun challenges); wallet coins come from
+// online races, the daily missions and winning a race against the computer
 function bankRun(){
   if(runBanked || !pw) return;
   runBanked = true;
-  const coins = pw.coinCount | 0;
   lastEarned = 0; earnNote = '';
-  dailyAdd('coins', coins); dailyAdd('dist', pw.dist | 0); dailyAdd('near', pw.nearN | 0); dailyAdd('combo', pw.bestCombo | 0, true);
-  if(!coins) return;
-  if(!acct.signedIn){ earnNote = 'سجّل دخول عشان عملات الجولة تتحط في محفظتك'; setEarn(); return; }
-  if(acct.ban){ setEarn(); return; }
-  rpc('bank_run', { p_coins:coins, p_mode:mode, p_dist_m:pw.dist | 0, p_secs:Math.round(pw.elapsed) }).then(r => {
+  dailyAdd('coins', pw.coinCount | 0); dailyAdd('dist', pw.dist | 0); dailyAdd('near', pw.nearN | 0); dailyAdd('combo', pw.bestCombo | 0, true);
+}
+// a race against the computer: the server times it, and a win pays a prize (with a daily limit) to signed-in players
+let cpuRun = null;
+function cpuBegin(){
+  cpuRun = null;
+  if(mode !== 'race' || !acct.signedIn || acct.ban) return;
+  cpuRun = rpc('cpu_start', { p_len:raceM }).catch(() => null);
+}
+async function cpuSettle(win){
+  const run = cpuRun; cpuRun = null;
+  if(!win){ earnNote = ''; return; }
+  if(!acct.signedIn){ earnNote = 'سجّل دخول عشان تاخد عملات الفوز'; setEarn(); return; }
+  const id = run && await run;
+  if(!id){ earnNote = ''; setEarn(); return; }
+  try{
+    const r = await rpc('cpu_finish', { p_id:id, p_won:true });
     lastEarned = (r && r.credited) | 0;
-    earnNote = (r && r.rejected) ? 'الجولة دي اتراجعت' : (lastEarned > 0 ? '+' + lastEarned + ' عملة في محفظتك' : 'وصلت للحد اليومي للعملات');
+    earnNote = lastEarned > 0 ? '+' + lastEarned + ' عملات في محفظتك' :
+      (r && r.reason === 'cap' ? 'وصلت للحد اليومي لجوايز سباقات الكمبيوتر (' + r.cap + ')' :
+      (r && r.reason === 'short' ? 'جايزة الكمبيوتر من ' + r.min + ' م وطالع' : ''));
     setEarn(); refreshState();
-  }).catch(e => { earnNote = errAr(e); setEarn(); });
+  }catch(e){ earnNote = ''; setEarn(); }
 }
 function setEarn(){ const n = $('earnLine'); if(n) n.textContent = earnNote; }
 
@@ -1733,7 +1747,7 @@ function noteRecord(secs){
   else recNote = 'وقتك ' + t + ' — أفضل وقت ليك ' + prev.toFixed(1) + ' ث';
 }
 const DAILY_POOL = [
-  { id:'coins', txt:n => 'اجمع ' + n + ' عملة', goals:[30, 50, 80] },
+  { id:'coins', txt:n => 'اجمع ' + n + ' نقطة', goals:[30, 50, 80] },
   { id:'dist',  txt:n => 'اجري ' + n + ' متر', goals:[1500, 3000, 5000] },
   { id:'near',  txt:n => 'عدّي ' + n + ' أشواك بالملّي', goals:[3, 5, 8] },
   { id:'combo', txt:n => 'كومبو ' + n + ' عملات ورا بعض', goals:[5, 8, 10] },
@@ -1890,7 +1904,7 @@ function renderStore(){
       box.style.cssText = 'display:flex;flex-direction:column;gap:8px';
       box.append(txt('div', 'ds', 'بحمّل...'));
       d.append(txt('div', 'ds', 'التحديات بتتحسب من سجلات السيرفر، وبتحسب بس اللي بتعمله وقت المسابقة اليومية. كل مكافأة بتتاخد مرة واحدة، وتقدر تاخدها لحد آخر اليوم.'), box);
-      const label = { play:n => 'العب ' + n + (n === 1 ? ' سباق' : ' سباقات') + ' أونلاين لحد الآخر', win:n => 'كسب ' + n + (n === 1 ? ' سباق' : ' سباقات') + ' أونلاين', earn:n => 'اكسب ' + n + ' عملة من الجري' };
+      const label = { play:n => 'العب ' + n + (n === 1 ? ' سباق' : ' سباقات') + ' أونلاين لحد الآخر', win:n => 'كسب ' + n + (n === 1 ? ' سباق' : ' سباقات') + ' أونلاين', cpu:n => 'كسب ' + n + (n === 1 ? ' سباق' : ' سباقات') + ' ضد الكمبيوتر' };
       rpc('daily_state').then(st => {
         evSet(st);
         if(!box.isConnected) return;
@@ -1954,7 +1968,7 @@ function renderStore(){
     }else{
       d.append(txt('div', 'nm', acct.name), txt('div', 'ds', acct.email || ''));
       d.append(txt('div', 'ds', 'رصيدك: ' + acct.coins + ' عملة (' + egpOf(acct.coins) + ' ج)'));
-      d.append(txt('div', 'ds', 'العملات بتتجمع بالعب (بكمية قليلة وبحد يومي) أو بالشحن: 100 عملة = 10 جنيه. للشحن ابعت للدعم المبلغ ورقم التحويل (InstaPay أو فودافون كاش).'));
+      d.append(txt('div', 'ds', 'عملات المتجر بتيجي من الفوز في السباقات (أونلاين أو ضد الكمبيوتر) ومن التحديات اليومية، أو بالشحن: 100 عملة = 10 جنيه. النقاط اللي بتجمعها في الجري مش بتتحول لعملات. للشحن ابعت للدعم المبلغ ورقم التحويل (InstaPay أو فودافون كاش).'));
       const row = document.createElement('div'); row.className = 'row';
       row.append(btn('اطلب شحن', () => { closeStore(); openSupport('عايز أشحن رصيدي بمبلغ ____ جنيه. رقم التحويل: ____'); }), btn('الدعم', () => { closeStore(); openSupport(); }));
       d.append(row);
@@ -2092,7 +2106,7 @@ function hideOverlay(){ el.overlay.hidden = true; document.body.classList.remove
 function showReady(){
   showOverlay('ستيك رن',
     '<details class="how"><summary>طريقة اللعب</summary><span class="long">اجري أبعد ما تقدر، واطلع على الدرجات، واقفز فوق الأشواك، وانزلق تحت الحبال، وخد مشروبات الطاقة عشان تملا الباور.<br>' +
-    'في السباق: انت والكمبيوتر على نفس المسار وتشوفوا بعض لما تكونوا قريبين، وأول واحد يوصل خط النهاية يكسب (طول السباق بتختاره من فوق)، يعني اللي قدام في المسار هو اللي بيكسب. العملات بتملا الطاقة. وتقدر تعمل كعبلة للخصم لو جنبك فيقع على وشه، أو تمسكه عشان تبطّأه، أو ترمي عليه طوبة (بتلاقي الطوب في المسار). لو وقعت بتستنى ثانيتين وتكمل.<br></span>' +
+    'في السباق: انت والكمبيوتر على نفس المسار وتشوفوا بعض لما تكونوا قريبين، وأول واحد يوصل خط النهاية يكسب (طول السباق بتختاره من فوق)، يعني اللي قدام في المسار هو اللي بيكسب. النقاط اللي في المسار (العملات الصفرا) بتملا الطاقة، بس مبتتحولش لعملات المتجر: عملات المتجر بتيجي من الفوز في السباقات (أونلاين أو ضد الكمبيوتر) والتحديات. وتقدر تعمل كعبلة للخصم لو جنبك فيقع على وشه، أو تمسكه عشان تبطّأه، أو ترمي عليه طوبة (بتلاقي الطوب في المسار). لو وقعت بتستنى ثانيتين وتكمل.<br></span>' +
     '<span class="kb">القفز: <kbd>مسافة</kbd> أو <kbd>↑</kbd> (خفيف = قصيرة، ممسوك = عالية)<br>' +
     'الانزلاق: <kbd>↓</kbd> &nbsp; التسريع: <kbd>→</kbd> &nbsp; شحن أسرع: <kbd>←</kbd> (بيبطّأ شوية) &nbsp; إيقاف: <kbd>P</kbd><br>كعبلة: <kbd>E</kbd> &nbsp; مسك: <kbd>R</kbd> (امسك) &nbsp; طوبة: <kbd>Q</kbd></span>' +
     '<span class="tc">يمينك: قفز (خفيف = قصيرة، ممسوك = عالية) وانزلاق وطوبة. شمالك: شحن وتسريع وكعبلة ومسك.</span></details>',
@@ -2211,7 +2225,7 @@ function startGame(){
   hideOverlay();
   applyMode();
   last = performance.now();
-  if(mode === 'race'){ state = 'countdown'; cdT = 3; }
+  if(mode === 'race'){ state = 'countdown'; cdT = 3; cpuBegin(); }
   else state = 'playing';
 }
 function primaryAction(){ if(mode === 'online') onlineReady(); else startGame(); }
@@ -2256,6 +2270,7 @@ function endRace(win, winnerName){
   state = 'finished'; endShown = false;
   bankRun();                 // everything freezes here: no more running, no more points
   finRank = rankings(); finWinner = winnerName || '';
+  cpuSettle(win);
   if(win){ wins++; save('stickrun:wins', wins); noteRecord(pw.elapsed); dailyAdd('wins', 1); beep(660, 1320, .4, 'triangle', .07); }
   else { losses++; save('stickrun:losses', losses); beep(300, 120, .4, 'sawtooth', .05); }
   updateHud();

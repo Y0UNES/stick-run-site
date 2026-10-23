@@ -310,7 +310,7 @@ async function ledgerOf(p, box){
 }
 
 /* ---------- alerts ---------- */
-const ALERT_NAMES = { coins_implausible:'عملات أكتر من الممكن', race_time_suspicious:'وقت سباق مستحيل', coins_spike:'عملات اتجمعت بسرعة' };
+const ALERT_NAMES = { coins_implausible:'عملات أكتر من الممكن', race_time_suspicious:'وقت سباق مستحيل', coins_spike:'عملات اتجمعت بسرعة', cpu_time_suspicious:'فوز على الكمبيوتر أسرع من الممكن' };
 async function renderAlerts(box){
   const rows = await tbl(sb.from('alerts').select('*').in('status', ['open', 'reviewing']).order('id', { ascending:false }).limit(100));
   await loadNames(rows.map(a => a.user_id));
@@ -411,9 +411,9 @@ async function renderBans(box){
 }
 
 /* ---------- settings ---------- */
-const CFG_LABELS = { starting_coins:'عملات البداية', run_coin_rate:'كام عملة محفظة لكل عملة جولة', run_daily_cap:'حد العملات اليومي من اللعب', coin_price_egp:'سعر العملة بالجنيه', race_fee:'رسوم دخول السباق', race_prize:'جايزة الفايز', race_comp_bonus:'تعويض زيادة لو فيه غشاش', max_run_coins_per_100m:'أقصى عملات جولة لكل 100 متر', rename_price:'سعر بطاقة الاسم',
-  daily_reward:'مكافأة كل تحدي يومي (عملات)', event_start_hour:'ساعة بداية المسابقة اليومية (بتوقيت القاهرة، 21 = 9 م)', event_minutes:'مدة المسابقة اليومية (بالدقايق)' };
-const EVENT_KEYS = ['daily_reward', 'event_start_hour', 'event_minutes'];
+const CFG_LABELS = { starting_coins:'عملات البداية', run_coin_rate:'(مش مستخدم) كام عملة محفظة لكل نقطة جولة', run_daily_cap:'(مش مستخدم) حد العملات اليومي من اللعب', coin_price_egp:'سعر العملة بالجنيه', race_fee:'رسوم دخول السباق', race_prize:'جايزة الفايز', race_comp_bonus:'تعويض زيادة لو فيه غشاش', max_run_coins_per_100m:'(مش مستخدم) أقصى نقاط جولة لكل 100 متر', rename_price:'سعر بطاقة الاسم',
+  daily_reward:'مكافأة كل تحدي يومي (عملات)', cpu_prize:'جايزة الفوز على الكمبيوتر (عملات)', cpu_daily_cap:'أقصى فوز بجايزة على الكمبيوتر في اليوم', cpu_min_len:'أقل طول سباق (متر) عشان جايزة الكمبيوتر', event_start_hour:'ساعة بداية المسابقة اليومية (بتوقيت القاهرة، 21 = 9 م)', event_minutes:'مدة المسابقة اليومية (بالدقايق)' };
+const EVENT_KEYS = ['daily_reward', 'event_start_hour', 'event_minutes'], CPU_KEYS = ['cpu_prize', 'cpu_daily_cap', 'cpu_min_len'];
 function cfgRow(c){
   const inp = h('input', { type:'number', step:'any', value:String(c.value), style:'width:110px', 'aria-label':CFG_LABELS[c.key] || c.key });
   const save = h('button', { class:'primary', onclick:async () => { const v = parseFloat(inp.value); if(isNaN(v)){ toast('اكتب رقم صح', true); return; } await run(() => rpc('admin_set_config', { p_key:c.key, p_value:v }), 'اتحفظ'); } }, 'احفظ');
@@ -423,7 +423,9 @@ function cfgRow(c){
 async function renderSettings(box){
   const cfg = await tbl(sb.from('config').select('*').order('key'));
   box.append(h('h2', null, 'الاقتصاد'));
-  for(const c of cfg) if(!EVENT_KEYS.includes(c.key)) box.append(cfgRow(c));
+  for(const c of cfg) if(!EVENT_KEYS.includes(c.key) && !CPU_KEYS.includes(c.key)) box.append(cfgRow(c));
+  box.append(h('h2', null, 'جوايز سباقات الكمبيوتر'));
+  for(const c of cfg) if(CPU_KEYS.includes(c.key)) box.append(cfgRow(c));
   box.append(h('h2', null, 'المسابقة اليومية'));
   const ev = cfg.filter(c => EVENT_KEYS.includes(c.key));
   if(!ev.length) box.append(empty('مفيش إعدادات للمسابقة.'));
