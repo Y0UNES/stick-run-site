@@ -378,6 +378,7 @@ body.vs .keys .k-atk{display:inline}
             <button class="chip" data-pl="4" type="button">4</button>
             <button class="chip" data-pl="6" type="button">6</button>
           </div>
+          <div class="recline" id="eventLine"></div>
           <div class="recline" id="recLine"></div>
           <div class="recline long" id="dailyLine"></div>
           <div class="online" id="onlineBox" hidden>
@@ -1570,7 +1571,7 @@ async function afterLogin(){
     applyState(st);
     if(!st.consent){ showAuth('وافق على الإشعار عشان تكمّل', true); return; }
     try{ const r = await sb.functions.invoke('gate'); if(r && r.data && r.data.ban){ acct.ban = r.data.ban; } }catch(e){}   // network + ban check
-    await loadCatalog(); await loadNetCfg();
+    await loadCatalog(); await loadNetCfg(); refreshEvent();
     hideAuth(); paintAcct();
     if(acct.ban) showBanned();
   }catch(e){ showAuth(errAr(e)); }
@@ -1738,6 +1739,26 @@ function dailyHtml(){
   return '<strong>تحديات للتسلية (المكافآت الحقيقية من المتجر ← مكافآت)</strong><br>' + rows.join('<br>') + (st.n > 1 && st.last ? '<br>سلسلة أيام: ' + st.n : '');
 }
 
+/* ---------- the daily event window (set on the server, shown in the player's own clock) ---------- */
+let ev = null;
+const fmtT = ms => new Date(ms).toLocaleTimeString('ar-EG', { hour:'numeric', minute:'2-digit' });
+function evSet(st){
+  if(!st || !st.start) return;
+  ev = { start:Date.parse(st.start), end:Date.parse(st.end), off:Date.parse(st.now) - Date.now() };
+  paintEvent();
+}
+function eventText(){
+  if(!ev) return '';
+  const now = Date.now() + ev.off, win = fmtT(ev.start) + ' لـ ' + fmtT(ev.end);
+  if(now < ev.start) return 'المسابقة اليومية النهاردة من ' + win;
+  if(now < ev.end) return 'المسابقة اليومية شغالة دلوقتي لحد ' + fmtT(ev.end) + ' — العب أونلاين مع الناس!';
+  return 'المسابقة اليومية خلصت النهاردة (' + win + ') وبتبدأ تاني بكرة ' + fmtT(ev.start);
+}
+function paintEvent(){ const n = $('eventLine'); if(n) n.textContent = eventText(); }
+async function refreshEvent(){ if(sb && acct.signedIn && !acct.ban){ try{ evSet(await rpc('daily_state')); }catch(e){} } }
+setInterval(() => { paintEvent(); }, 30000);
+setInterval(refreshEvent, 300000);
+
 /* ---------- store ---------- */
 let storeTab = 'skins', storeBusy = false;
 const storeEl = $('store');
@@ -1831,11 +1852,13 @@ function renderStore(){
       const box = document.createElement('div');
       box.style.cssText = 'display:flex;flex-direction:column;gap:8px';
       box.append(txt('div', 'ds', 'بحمّل...'));
-      d.append(txt('div', 'ds', 'التحديات بتتحسب من سجلات السيرفر وبتتجدد كل يوم. كل مكافأة بتتاخد مرة واحدة.'), box);
+      d.append(txt('div', 'ds', 'التحديات بتتحسب من سجلات السيرفر، وبتحسب بس اللي بتعمله وقت المسابقة اليومية. كل مكافأة بتتاخد مرة واحدة، وتقدر تاخدها لحد آخر اليوم.'), box);
       const label = { play:n => 'العب ' + n + (n === 1 ? ' سباق' : ' سباقات') + ' أونلاين لحد الآخر', win:n => 'كسب ' + n + (n === 1 ? ' سباق' : ' سباقات') + ' أونلاين', earn:n => 'اكسب ' + n + ' عملة من الجري' };
       rpc('daily_state').then(st => {
+        evSet(st);
         if(!box.isConnected) return;
         box.textContent = '';
+        box.append(txt('div', 'nm', eventText()));
         for(const m of st.missions){
           const row = document.createElement('div'); row.className = 'row';
           const t = txt('div', 'ds', (label[m.id] ? label[m.id](m.goal) : m.id) + ' (' + m.got + '/' + m.goal + ')'); t.style.flex = '1';
@@ -2093,6 +2116,7 @@ function paintOpts(){
   const rec = recOf(raceM);
   $('recLine').textContent = mode !== 'free' && rec ? 'أفضل وقت ليك في ' + raceM + ' م: ' + rec.toFixed(1) + ' ث' : '';
   $('dailyLine').innerHTML = dailyHtml();
+  paintEvent();
 }
 el.ovOpts.addEventListener('click', async e => {
   const b = e.target.closest('.chip');
