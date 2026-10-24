@@ -1236,6 +1236,7 @@ async function joinRoom(opts){
         try{ st = await rpc(zombie ? 'zroom_create' : 'room_create', { p_code:c, p_max:roomMax, p_len:raceM, p_private:roomPrivate }); $('roomCode').value = c; break; }
         catch(e){ if(!/room exists/.test(e.message) || i >= 3) throw e; }
       }
+      if(zombie && zLevel !== 'mid'){ try{ st = await rpc('zroom_level', { p_level:zLevel }); }catch(e){} }
     }else st = await rpc(zombie ? 'zroom_join' : 'room_join', { p_code:code });
     enterRoom(st);
   }catch(e){ net.err = errAr(e); }
@@ -1321,7 +1322,7 @@ function updateOnlineUi(){
     if(r.status === 'running'){ msg = 'فيه سباق شغال في الغرفة، استنى لحد ما يخلص.'; label = 'السباق شغال'; }
     else if(n < 2){ msg = 'أنت في الغرفة ' + r.code + ' (1/' + r.max + '). مستني لاعبين يدخلوا نفس الكود. السباق: ' + r.length_m + ' م.'; label = 'مستني اللاعبين'; }
     else if(iReady){ msg = 'مستني الباقيين... (' + readyN + '/' + n + ' جاهزين)'; label = 'مستني الباقيين'; }
-    else if(r.kind === 'zombie'){ msg = 'غرفة زومبي جماعية ' + n + '/' + r.max + '. جاهزين ' + readyN + '/' + n + '. دوس جاهز. اتعاونوا وصّلوا لآخر الطريق (' + r.length_m + ' م) من غير رسوم، والنتيجة نقاط بس.'; can = true; }
+    else if(r.kind === 'zombie'){ msg = 'غرفة زومبي جماعية (' + (ZLV[r.level] || ZLV.mid).name + ') ' + n + '/' + r.max + '. جاهزين ' + readyN + '/' + n + '. دوس جاهز. اتعاونوا وصّلوا لآخر الطريق (' + r.length_m + ' م) من غير رسوم، والنتيجة نقاط بس.'; can = true; }
     else{ msg = 'في الغرفة ' + n + '/' + r.max + '. جاهزين ' + readyN + '/' + n + '. دوس جاهز. الدخول ' + net.fee + ' عملات والفايز ياخد ' + net.prize + '. طول السباق ' + r.length_m + ' م.'; can = true; }
     if(net.err) msg = net.err + ' — ' + msg;
     if(!net.connected) msg = 'بوصل بالخدمة... ' + msg;
@@ -1330,6 +1331,8 @@ function updateOnlineUi(){
   el.btn.textContent = label;
   el.btn.disabled = !can;
   $('kindChips').hidden = !!net.room;
+  $('lvlChips').hidden = !(zombieCtx() || mode === 'race');
+  el.ovOpts.querySelectorAll('[data-level]').forEach(b => b.setAttribute('aria-pressed', b.dataset.level === (zombieCtx() ? zCtxLevel() : level) ? 'true' : 'false'));
   paintLen(); paintPl(); paintRooms();
   fitCard(false);
 }
@@ -1399,7 +1402,7 @@ function zBeginCoop(r){
     opps.push({ kind:'zmate', uid:p.id, name:t.name, ci:mates.length, w:{ scroll:0, dist:0, P:{ phase:0 }, dead:false }, dnf:false });
   });
   bricks = []; remoteBricks = [];
-  zBegin({ coop:true, seed, len:r.length_m, run:r.run_id, mates });
+  zBegin({ coop:true, seed, len:r.length_m, run:r.run_id, level:r.level, mates });
   lastScore = lastCoins = lastE = lastAmmo = uiMe = uiCpu = -1; lastBoosting = null;
   buildRaceBar(); updateHud();
   endShown = false; newBest = false; goT = 0;
@@ -2232,12 +2235,12 @@ function paintLen(){
 }
 function paintOpts(){
   el.ovOpts.querySelectorAll('[data-mode],[data-level],[data-cpu],[data-kind]').forEach(b => {
-    const on = (b.dataset.mode && b.dataset.mode === mode) || (b.dataset.level && b.dataset.level === level) || (b.dataset.cpu && +b.dataset.cpu === cpuN) || (b.dataset.kind && b.dataset.kind === (net.room ? (net.room.kind || 'race') : roomKind));
+    const on = (b.dataset.mode && b.dataset.mode === mode) || (b.dataset.level && b.dataset.level === (zombieCtx() ? zCtxLevel() : level)) || (b.dataset.cpu && +b.dataset.cpu === cpuN) || (b.dataset.kind && b.dataset.kind === (net.room ? (net.room.kind || 'race') : roomKind));
     b.setAttribute('aria-pressed', on ? 'true' : 'false');
   });
   paintLen();
   $('lenChips').hidden = mode === 'free';
-  $('lvlChips').hidden = mode !== 'race';
+  $('lvlChips').hidden = !(mode === 'race' || zombieCtx());
   $('cpuChips').hidden = mode !== 'race';
   $('plChips').hidden = mode !== 'online';
   paintPl();
@@ -2261,7 +2264,12 @@ el.ovOpts.addEventListener('click', async e => {
     if(mode === 'online'){ if(!acct.signedIn) showAuth('سجّل دخول عشان تلعب أونلاين'); else if(acct.ban) showBanned(); else pollRooms(); }
     newWorlds();
   }
-  if(b.dataset.level){ level = b.dataset.level; save('stickrun:level', level); }
+  if(b.dataset.level){
+    if(zombieCtx()){                                       // the zombie level: in a room only its owner can change it
+      if(mode === 'online' && net.room){ if(iAmOwner()){ try{ net.room = await rpc('zroom_level', { p_level:b.dataset.level }); net.err = ''; }catch(err){ net.err = errAr(err); } } }
+      else{ zLevel = b.dataset.level; save('stickrun:zlevel', zLevel); applyMode(); }
+    }else{ level = b.dataset.level; save('stickrun:level', level); }
+  }
   if(b.dataset.kind && !net.room){ roomKind = b.dataset.kind; save('stickrun:kind', roomKind); }
   if(b.dataset.cpu){ cpuN = +b.dataset.cpu; save('stickrun:cpus', cpuN); newWorlds(); }
   if(b.dataset.pl){                                 // the room's owner sets the size
@@ -3034,10 +3042,20 @@ const ZTYPES = [
   { sp:88,  hp:3,  dmg:10, pts:25,  w:13, h:62,  col:'#8C5BA8', ranged:1 }          // the thrower: keeps its distance and flings things at you
 ];
 const ZTHROW_RANGE = 470, ZTHROW_KEEP = 300;
+// difficulty: hard is the full strength; the other two scale the zombies' speed and damage, the waves, the throwers, the boss and its minions
+const ZLV = {
+  easy:{ name:'سهل',   spd:.75, dmg:.6, wave:.45, spawn:.6, thr:.5,  boss:.6, proj:.6, minions:2 },
+  mid: { name:'متوسط', spd:.88, dmg:.8, wave:.7,  spawn:.8, thr:.75, boss:.8, proj:.8, minions:3 },
+  hard:{ name:'صعب',   spd:1,   dmg:1,  wave:1,   spawn:1,  thr:1,   boss:1,  proj:1,  minions:4 }
+};
+let zLevel = ZLV[load('stickrun:zlevel', 'mid')] ? load('stickrun:zlevel', 'mid') : 'mid';
+const zombieCtx = () => mode === 'zombie' || (mode === 'online' && (net.room ? net.room.kind === 'zombie' : roomKind === 'zombie'));
+// which level the menu is showing: the room's (online) or your own pick
+const zCtxLevel = () => (mode === 'online' && net.room && net.room.kind === 'zombie') ? (net.room.level || 'mid') : zLevel;
 let zOn = false, zs = null, fireHeld = false, zUiOn = null;
 const zUi = () => mode === 'zombie' || zOn;
-const zBest = n => parseInt(load('stickrun:zbest:' + n, '0'), 10) || 0;
-const zRec = n => parseFloat(load('stickrun:zrec:' + n, '')) || 0;
+const zBest = (n, l) => parseInt(load('stickrun:zbest:' + n + ':' + (l || zCtxLevel()), '0'), 10) || 0;
+const zRec = (n, l) => parseFloat(load('stickrun:zrec:' + n + ':' + (l || zCtxLevel()), '')) || 0;
 
 // raised platforms: you can stand on them, the zombies can't climb up, and they walk right underneath
 function zPlatforms(seed, fin){
@@ -3181,7 +3199,8 @@ function zNewMate(p){
 function zBegin(o){
   o = o || {};
   const seed = o.seed !== undefined ? o.seed >>> 0 : (Math.random() * 4294967296) >>> 0, fin = (o.len || raceM) * 50, plats = zPlatforms(seed, fin);
-  zs = { fin, t:0, coop:!!o.coop, run:o.run || null, myId:(o.coop && acct.id) ? acct.id : 'me', plats, items:zItems(seed, fin, plats), taken:new Set(), zombies:[], bullets:[], bombs:[], fx:[], corpses:[], proj:[], pid:1, pHit:new Set(), nextId:1, bid:0,
+  const lvKey = ZLV[o.level] ? o.level : zLevel;
+  zs = { fin, t:0, lvKey, lv:ZLV[lvKey], coop:!!o.coop, run:o.run || null, myId:(o.coop && acct.id) ? acct.id : 'me', plats, items:zItems(seed, fin, plats), taken:new Set(), zombies:[], bullets:[], bombs:[], fx:[], corpses:[], proj:[], pid:1, pHit:new Set(), nextId:1, bid:0,
          spawnT:ZSAFE, rng:mulberry32((Math.random() * 4294967296) >>> 0), over:false, won:false, ended:false, counted:new Set(), recentKills:[], lastSend:0, lastSnap:0,
          wave:null, wavesDone:new Set(), calmT:0, bossDone:false, wv:0, lastWv:0, bossSeen:false, banner:null, groanT:1,
          mates:o.mates || [],
@@ -3409,7 +3428,7 @@ function zHurtDown(){
 /* --- the zombies (run by the host) --- */
 function zType(prog, k){
   const r = zs.rng, q = r();
-  const tank = Math.min(.25, .06 + .12 * prog + .012 * k), thr = Math.min(.2, .04 + .1 * prog + .008 * k);
+  const tank = Math.min(.25, .06 + .12 * prog + .012 * k), thr = Math.min(.2, .04 + .1 * prog + .008 * k) * zs.lv.thr;
   if(q < tank) return 2;
   if(q < tank + thr) return 4;
   return r() < Math.min(.5, .3 + .25 * prog + .01 * k) ? 1 : 0;
@@ -3419,13 +3438,13 @@ function zSpawnAt(anchors, ty, front, rage){
   const lead = Math.max(...anchors.map(p => p.wx)), tail = Math.min(...anchors.map(p => p.wx));
   const f = front || tail <= 400;
   const x = f ? Math.min(z.fin + 250, lead + W / 2 + 70 + r() * 320) : tail - W / 2 - 70 - r() * 320;
-  const hp = ty === 3 ? ZTYPES[3].hp + 25 * (zPlayers().length - 1) : ZTYPES[ty].hp;
+  const hp = ty === 3 ? Math.round((ZTYPES[3].hp + 25 * (zPlayers().length - 1)) * z.lv.boss) : ZTYPES[ty].hp;
   z.zombies.push({ id:z.nextId++, ty, x, hp, mh:hp, dir:f ? -1 : 1, spd:(ty === 3 ? 1 : (ty === 1 ? .9 + r() * .2 : .95 + r() * .25)) * (rage ? 1.12 : 1), flash:0, phase:r() * 6, mv:1, cd:1 + r() * 2, th:0 });
 }
 function zSpawn(anchors, n, mult){
   const z = zs, r = z.rng;
   const lead = Math.max(...anchors.map(p => p.wx)), prog = Math.min(1, lead / z.fin);
-  z.spawnT = Math.max(.45, 1.35 - prog * 1.0) / (1 + .45 * (n - 1)) * mult;
+  z.spawnT = Math.max(.45, 1.35 - prog * 1.0) / (1 + .45 * (n - 1)) * mult / z.lv.spawn;
   const k = r() < .3 ? 3 : (r() < .5 ? 2 : 1);
   for(let i = 0; i < k; i++) zSpawnAt(anchors, zType(prog, 0), r() < .55);
 }
@@ -3442,7 +3461,7 @@ function zWaves(h, anchors, n, anyDown){
   const k = z.wavesDone.size + 1;
   if(k * ZWAVE_GAP < z.fin - ZWAVE_GAP && lead >= k * ZWAVE_GAP && !anyDown){                 // no new wave while somebody is waiting to be picked up
     z.wavesDone.add(k);
-    z.wave = { k, left:Math.min(150, Math.round((22 + 12 * k) * (1 + .6 * (n - 1)))), t:0, acc:0 };
+    z.wave = { k, left:Math.max(8, Math.min(150, Math.round((22 + 12 * k) * (1 + .6 * (n - 1)) * z.lv.wave))), t:0, acc:0 };
   }
   if(!z.bossDone && lead >= z.fin - ZWAVE_GAP && z.fin > ZWAVE_GAP){                         // the last 100 m: the big one
     z.bossDone = true;
@@ -3457,11 +3476,11 @@ function zSim(h, players){
   z.wv = z.wave ? z.wave.k : 0;
   if(z.zombies.some(e => e.ty === 3 && e.hp > 0) && anchors.length){                          // while the boss lives it keeps calling more
     z.bossT = (z.bossT === undefined ? 4 : z.bossT) - h;
-    if(z.bossT <= 0){ z.bossT = 7; for(let i = 0; i < 4; i++) zSpawnAt(anchors, zType(1, 8), i % 2 === 0, true); }
+    if(z.bossT <= 0){ z.bossT = 7; for(let i = 0; i < z.lv.minions; i++) zSpawnAt(anchors, zType(1, 8), i % 2 === 0, true); }
   }
   z.spawnT -= h;
   if(z.calmT > 0) z.calmT -= h;
-  const cap = z.wave ? 130 : Math.round((24 + 7 * (players.length - 1)) * (anyDown ? .5 : 1));
+  const cap = z.wave ? 130 : Math.round((24 + 7 * (players.length - 1)) * (anyDown ? .5 : 1) * z.lv.spawn);
   if(!z.wave && z.spawnT <= 0 && z.zombies.length < cap && anchors.length) zSpawn(anchors, players.length, anyDown ? 2.2 : (z.calmT > 0 ? 2.8 : 1));
   for(const e of z.zombies){
     if(e.flash > 0) e.flash -= h;
@@ -3478,12 +3497,12 @@ function zSim(h, players){
       if(Math.abs(dx) < ZTHROW_RANGE && e.cd <= 0){
         const x0 = e.x + e.dir * 14 * (Ty.h / 62), h0 = Ty.h * .72, sp = e.ty === 3 ? 390 : 430;
         const ex = tgt.wx - x0, ey = tgt.h + 36 - h0, L = Math.hypot(ex, ey) || 1;
-        z.proj.push({ id:z.pid++, x:x0, h:h0, vx:ex / L * sp, vy:ey / L * sp, t:2.6, dmg:e.ty === 3 ? 30 : 14 });
+        z.proj.push({ id:z.pid++, x:x0, h:h0, vx:ex / L * sp, vy:ey / L * sp, t:2.6, dmg:Math.round((e.ty === 3 ? 30 : 14) * z.lv.proj) });
         e.cd = e.ty === 3 ? 2.4 : 1.4 + z.rng() * 1.0; e.th = .3;
       }
       if(e.ty !== 3 && Math.abs(dx) < ZTHROW_KEEP) continue;      // a thrower stops once it is close enough
     }
-    if(Math.abs(dx) > 10 && !(tgt.h > 70 && Math.abs(dx) < 16)){ e.x += e.dir * Ty.sp * e.spd * h; e.phase += h * Ty.sp * .05; e.mv = 1; }   // under a platform they just stand there
+    if(Math.abs(dx) > 10 && !(tgt.h > 70 && Math.abs(dx) < 16)){ e.x += e.dir * Ty.sp * e.spd * z.lv.spd * h; e.phase += h * Ty.sp * .05; e.mv = 1; }   // under a platform they just stand there
   }
   for(const q of z.proj){ q.x += q.vx * h; q.h += q.vy * h; q.t -= h; }
   z.proj = z.proj.filter(q => q.t > 0 && q.h > -10);
@@ -3497,7 +3516,7 @@ function zFollow(h){
     if(e.flash > 0) e.flash -= h;
     if(e.xs !== undefined){
       const age = Math.min(.25, (now - e.sT) / 1000);
-      e.x += (e.xs + e.dir * (e.mv ? 1 : 0) * Ty.sp * age - e.x) * Math.min(1, h * 14);
+      e.x += (e.xs + e.dir * (e.mv ? 1 : 0) * Ty.sp * z.lv.spd * age - e.x) * Math.min(1, h * 14);
     }
     if(e.mv) e.phase += h * Ty.sp * .05;
     if(e.th > 0) e.th -= h;
@@ -3558,7 +3577,7 @@ function zTick(h){
   else if(!m.fin && !m.dead){
     for(const e of z.zombies){
       const Ty = ZTYPES[e.ty];
-      if(e.hp > 0 && Math.abs(e.x - m.wx) < Ty.w + 10 && (m.down || m.h < Ty.h + 5)){ if(m.down) zHurtDown(); else zHurt(Ty.dmg, e.x); break; }
+      if(e.hp > 0 && Math.abs(e.x - m.wx) < Ty.w + 10 && (m.down || m.h < Ty.h + 5)){ if(m.down) zHurtDown(); else zHurt(Math.round(Ty.dmg * z.lv.dmg), e.x); break; }
     }
   }
   if(m.inv <= 0 && !m.fin && !m.dead){
@@ -3627,13 +3646,13 @@ function zOver(escaped){
   state = (escaped || z.coop) ? 'finished' : 'dead'; endShown = false;
   musicStop();
   z.score = zScore();
-  z.newBest = z.score > zBest(raceM);
-  if(z.newBest) save('stickrun:zbest:' + raceM, z.score);
-  const prev = zRec(raceM);
+  z.newBest = z.score > zBest(raceM, z.lvKey);
+  if(z.newBest) save('stickrun:zbest:' + raceM + ':' + z.lvKey, z.score);
+  const prev = zRec(raceM, z.lvKey);
   z.newRec = escaped && (!prev || z.t < prev);
-  if(z.newRec) save('stickrun:zrec:' + raceM, z.t.toFixed(2));
+  if(z.newRec) save('stickrun:zrec:' + raceM + ':' + z.lvKey, z.t.toFixed(2));
   z.prevRec = prev;
-  el.best.textContent = zBest(raceM);
+  el.best.textContent = zBest(raceM, z.lvKey);
   if(z.coop){ z.lastSend = 0; zSendPresence(); zNetEnd(); }
   beep(escaped ? 660 : 200, escaped ? 1320 : 60, .4, escaped ? 'triangle' : 'sawtooth', .06);
   setTimeout(() => { if(state === 'finished' || state === 'dead') showZEnd(); }, 900);
@@ -3641,7 +3660,7 @@ function zOver(escaped){
 function showZEnd(){
   const z = zs; if(!z) return;
   endShown = true;
-  let html = 'قتلى: <strong>' + z.me.kills + '</strong> — مسافة: <strong>' + Math.floor(z.me.wx / 50) + ' م</strong> من ' + raceM + '<br>النقاط: <strong>' + z.score + '</strong> — أعلى نقاط ليك في ' + raceM + ' م: <strong>' + zBest(raceM) + '</strong>';
+  let html = 'قتلى: <strong>' + z.me.kills + '</strong> — مسافة: <strong>' + Math.floor(z.me.wx / 50) + ' م</strong> من ' + raceM + '<br>النقاط: <strong>' + z.score + '</strong> — أعلى نقاط ليك في ' + raceM + ' م (' + z.lv.name + '): <strong>' + zBest(raceM, z.lvKey) + '</strong>';
   if(z.newBest) html += '<br>رقم قياسي جديد في النقاط!';
   if(z.won) html += '<br>وصلت في ' + z.t.toFixed(1) + ' ث' + (z.newRec ? ' — أسرع وقت ليك!' : (z.prevRec ? ' — أفضل وقت ' + z.prevRec.toFixed(1) + ' ث' : ''));
   if(z.coop){
