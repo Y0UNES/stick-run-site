@@ -77,20 +77,20 @@ body{
   max-width:960px;min-height:100%;margin:0 auto;padding:12px;
   display:flex;flex-direction:column;justify-content:center;gap:12px;
 }
-.hud{display:flex;align-items:center;gap:8px 22px;flex-wrap:wrap}
+.hud{display:flex;align-items:center;gap:8px 16px;flex-wrap:wrap}
 .hud .item{display:flex;align-items:baseline;gap:8px;font-weight:500;color:var(--muted)}
 .hud b{
   font-family:"Lalezar","Cairo",sans-serif;font-weight:400;font-size:28px;line-height:1;
-  color:var(--ink);font-variant-numeric:tabular-nums;min-width:4ch;display:inline-block;
+  color:var(--ink);font-variant-numeric:tabular-nums;min-width:3ch;display:inline-block;
 }
-.hud .score b{font-size:38px;min-width:5ch}
+.hud .score b{font-size:38px;min-width:4ch}
 .mute{
   margin-inline-start:auto;font:inherit;font-weight:500;font-size:15px;color:var(--ink);
   background:transparent;border:2px solid var(--ink);border-radius:10px;padding:4px 12px;cursor:pointer;
 }
 :focus-visible{outline:3px solid var(--pencil);outline-offset:3px}
 .hud .energy{align-items:center}
-.energy .bar{display:block;width:clamp(90px,22vw,150px);height:16px;border:2px solid var(--ink);border-radius:9px;overflow:hidden}
+.energy .bar{display:block;width:clamp(80px,13vw,130px);height:16px;border:2px solid var(--ink);border-radius:9px;overflow:hidden}
 .energy .bar i{display:block;height:100%;width:60%;background:var(--marker)}
 .energy .bar.boost i{background:var(--pencil)}
 .pad.sm{height:60px;font-size:18px}
@@ -450,7 +450,7 @@ body.padedit .pad.sel{outline:3px solid var(--marker)}
             <button class="chip" data-pl="4" type="button">4</button>
             <button class="chip" data-pl="6" type="button">6</button>
           </div>
-          <details class="how" id="zHow" hidden><summary>طريقة لعب الزومبي</summary><div>اوصل لآخر الطريق. الزومبي بييجوا من قدام ومن ورا، ومبيعرفوش يطلعوا فوق المنصات (بيعدّوا من تحتها). كل 100 متر فيه موجة كبيرة، وفي آخر 100 متر وحش ضخم. امشي قدام وورا بالأسهم (وكل ما صحتك تقل مشيتك تبقى أبطأ)، واقفز مرتين، واضرب بـ F أو Q، وبالكاتانا E (مدى طويل)، وبالقنابل R، واتعالج بـ H. تقدر تشيل علاج واحد و3 قنابل. على الأرض الضرب في الناحية اللي بتبصلها، ولو فوق منصة والزومبي تحتك التصويب بيروح ناحيتهم لوحده. السهم لتحت بينزلك من المنصة. لو وقعت عندك 30 ثانية: تقدر تضرب بس أبطأ، وزميلك لو وقف جنبك 5 ثواني متواصلة يقومك (مرتين بس في الجولة). النتيجة نقاط وأرقام قياسية بس.</div></details>
+          <details class="how" id="zHow" hidden><summary>طريقة لعب الزومبي</summary><div>اوصل لآخر الطريق. الزومبي بييجوا من قدام ومن ورا، ومبيعرفوش يطلعوا فوق المنصات (بيعدّوا من تحتها). كل 100 متر فيه موجة كبيرة، وفي آخر 100 متر وحش ضخم. امشي قدام وورا بالأسهم (وكل ما صحتك تقل مشيتك تبقى أبطأ)، واقفز مرتين، واضرب بـ F أو Q، وبالكاتانا E (مدى طويل)، وبالقنابل R، واتعالج بـ H. تقدر تشيل علاجين و4 قنابل. الكاتانا ضربتها قوية. بعد ما الوحش الكبير يموت الزومبي العاديين بيرجعوا، وقبل النهاية بـ 50 متر فيه موجة أخيرة أكبر من أي موجة. على الأرض الضرب في الناحية اللي بتبصلها، ولو فوق منصة والزومبي تحتك التصويب بيروح ناحيتهم لوحده. السهم لتحت بينزلك من المنصة. لو وقعت عندك 30 ثانية: تقدر تضرب بس أبطأ، وزميلك لو وقف جنبك 5 ثواني متواصلة يقومك (مرتين بس في الجولة). النتيجة نقاط وأرقام قياسية بس.</div></details>
           <div class="recline" id="eventLine"></div>
           <div class="recline" id="recLine"></div>
           <div class="long" id="dailyLine"></div>
@@ -3077,7 +3077,7 @@ function frame(now){
 const ZW = 250, ZHP = 100, ZMAG = 20, ZRELOAD = .9, ZFIRE_CD = .16, ZDOWN_CD = .6, ZBUL_V = 1150, ZBUL_LIFE = .6, ZHIT_CD = 1, ZSAFE = 4;
 const ZWAVE_GAP = 5000;                                  // a big wave every 100 m, and the boss in the last 100 m
 const ZDOWN_TIME = 30, ZREV_NEED = 5, ZREV_MAX = 2, ZREV_RANGE = 70;   // 30 s to be picked up, 5 s of a mate standing by you, twice per run
-const ZBOMB_MAX = 3, ZBOMB_R = 135, ZBOMB_DMG = 8, ZKAT_USES = 15, ZKAT_RANGE = 135, ZKAT_CD = .45, ZKAT_DMG = 3, ZMED_HEAL = 45;
+const ZBOMB_MAX = 4, ZMED_MAX = 2, ZBOMB_R = 135, ZBOMB_DMG = 8, ZKAT_USES = 15, ZKAT_RANGE = 150, ZKAT_CD = .45, ZKAT_DMG = 6, ZMED_HEAL = 45;
 // walkers are slow, runners fast and fragile, tanks slow and tough, and one huge boss at the end
 const ZTYPES = [
   { sp:105, hp:2,  dmg:16, pts:10,  w:13, h:62,  col:'#5E9B4A' },
@@ -3247,7 +3247,7 @@ function zBegin(o){
   const lvKey = ZLV[o.level] ? o.level : zLevel;
   zs = { fin, t:0, lvKey, lv:ZLV[lvKey], coop:!!o.coop, run:o.run || null, myId:(o.coop && acct.id) ? acct.id : 'me', plats, items:zItems(seed, fin, plats), taken:new Set(), zombies:[], bullets:[], bombs:[], fx:[], corpses:[], proj:[], pid:1, pHit:new Set(), nextId:1, bid:0,
          spawnT:ZSAFE, rng:mulberry32((Math.random() * 4294967296) >>> 0), over:false, won:false, ended:false, counted:new Set(), recentKills:[], lastSend:0, lastSnap:0,
-         wave:null, wavesDone:new Set(), calmT:0, bossDone:false, wv:0, lastWv:0, bossSeen:false, banner:null, groanT:1,
+         wave:null, wavesDone:new Set(), calmT:0, bossDone:false, finalDone:false, wv:0, lastWv:0, bossSeen:false, banner:null, groanT:1,
          mates:o.mates || [],
          me:{ wx:0, h:0, vy:0, on:true, jumps:2, face:1, hp:ZHP, inv:ZSAFE - 1, ammo:ZMAG, reload:0, cd:0, kills:0, down:false, dead:false, downT:0, dropT:0, phase:0, flash:0, aimA:0, fin:false,
               bombs:0, meds:0, kat:0, kcd:0, slashT:0, bcd:0, revives:0, revIn:0, slow:0 } };
@@ -3515,6 +3515,12 @@ function zWaves(h, anchors, n, anyDown){
     for(let i = 0; i < escort; i++) zSpawnAt(anchors, zType(1, 8), i % 2 === 0, true);
     z.banner = { t:3.5, text:'الوحش الكبير ومعاه جيشه!' };
   }
+  if(!z.finalDone && z.fin > ZWAVE_GAP && lead >= z.fin - 2500 && !anyDown){                  // 50 m from the end: one last wave, half again as big as a normal one
+    z.finalDone = true;
+    const kk = z.wavesDone.size + 1;
+    z.wave = { k:kk, final:true, left:Math.max(12, Math.min(225, Math.round((22 + 12 * kk) * (1 + .6 * (n - 1)) * z.lv.wave * 1.5))), t:0, acc:0 };
+    z.banner = { t:3, text:'الموجة الأخيرة!' };
+  }
 }
 function zSim(h, players){
   const z = zs;
@@ -3525,7 +3531,8 @@ function zSim(h, players){
   z.spawnT -= h;
   if(z.calmT > 0) z.calmT -= h;
   const cap = z.wave ? 130 : Math.round((24 + 7 * (players.length - 1)) * (anyDown ? .5 : 1) * z.lv.spawn);
-  if(!z.wave && !z.bossDone && z.spawnT <= 0 && z.zombies.length < cap && anchors.length) zSpawn(anchors, players.length, anyDown ? 2.2 : (z.calmT > 0 ? 2.8 : 1));
+  const bossAlive = z.zombies.some(e => e.ty === 3 && e.hp > 0);
+  if(!z.wave && !(z.bossDone && bossAlive) && z.spawnT <= 0 && z.zombies.length < cap && anchors.length) zSpawn(anchors, players.length, anyDown ? 2.2 : (z.calmT > 0 ? 2.8 : 1));
   for(const e of z.zombies){
     if(e.flash > 0) e.flash -= h;
     const Ty = ZTYPES[e.ty];
@@ -3598,7 +3605,7 @@ function zTick(h){
     // things lying around
     for(const it of z.items){
       if(z.taken.has(it.i) || Math.abs(m.wx - it.x) > 34 || Math.abs(m.h - it.h) > 44) continue;
-      if(it.type === 'med'){ if(m.meds >= 1) continue; m.meds = 1; popup(pw, 'علاج +1'); }
+      if(it.type === 'med'){ if(m.meds >= ZMED_MAX) continue; m.meds++; popup(pw, 'علاج +1'); }
       else if(it.type === 'bomb'){ if(m.bombs >= ZBOMB_MAX) continue; m.bombs = Math.min(ZBOMB_MAX, m.bombs + 2); popup(pw, 'قنابل'); }
       else{ m.kat = ZKAT_USES; popup(pw, 'كاتانا!'); }
       z.taken.add(it.i); beep(500, 900, .15, 'sine', .06);
@@ -3907,7 +3914,7 @@ function drawZHud(z, m, cam){
   ctx.font = '700 15px "Cairo", sans-serif'; ctx.lineJoin = 'round'; ctx.lineWidth = 4; ctx.strokeStyle = C.paper;
   const txt = (t, x, y, col, al) => { ctx.textAlign = al || 'center'; ctx.strokeText(t, x, y); ctx.fillStyle = col || C.ink; ctx.fillText(t, x, y); };
   // what I'm carrying
-  const inv = [['med', m.meds + '/1'], ['bomb', m.bombs + '/' + ZBOMB_MAX], ['katana', String(m.kat)]];
+  const inv = [['med', m.meds + '/' + ZMED_MAX], ['bomb', m.bombs + '/' + ZBOMB_MAX], ['katana', String(m.kat)]];
   if(z.coop) inv.push(['life', String(Math.max(0, ZREV_MAX - m.revives))]);
   let x = W - 14;
   for(const [k, v] of inv.slice().reverse()){
@@ -3916,12 +3923,15 @@ function drawZHud(z, m, cam){
     x -= 34;
   }
   // how far to the next wave (and the boss)
-  const nextWave = Math.floor(m.wx / ZWAVE_GAP) * ZWAVE_GAP + ZWAVE_GAP;
   let note = '';
-  if(z.wave) note = 'موجة زومبي شغالة!';
-  else if(m.wx >= z.fin - ZWAVE_GAP) note = 'الوحش الكبير قدامك!';
-  else if(nextWave >= z.fin - ZWAVE_GAP) note = 'الوحش الكبير بعد ' + Math.max(0, Math.round((z.fin - ZWAVE_GAP - m.wx) / 50)) + ' م';
-  else note = 'الموجة الجاية بعد ' + Math.max(0, Math.round((nextWave - m.wx) / 50)) + ' م';
+  if(z.wave || z.wv) note = (z.wave && z.wave.final) ? 'الموجة الأخيرة شغالة!' : 'موجة زومبي شغالة!';
+  else if(z.zombies.some(e => e.ty === 3 && e.hp > 0)) note = 'الوحش الكبير قدامك!';
+  else{
+    const ev = [[z.fin - ZWAVE_GAP, 'الوحش الكبير'], [z.fin - 2500, 'الموجة الأخيرة']];
+    for(let k = 1; k * ZWAVE_GAP < z.fin - ZWAVE_GAP; k++) ev.push([k * ZWAVE_GAP, 'الموجة الجاية']);
+    const nx = ev.filter(e => e[0] > m.wx).sort((a, b) => a[0] - b[0])[0];
+    note = nx ? nx[1] + ' بعد ' + Math.max(0, Math.round((nx[0] - m.wx) / 50)) + ' م' : 'خط النهاية بعد ' + Math.max(0, Math.round((z.fin - m.wx) / 50)) + ' م';
+  }
   txt(note, 14, top + 14, z.wave ? C.pencil : C.ink, 'left');
   // the boss's health
   const boss = z.zombies.find(e => e.ty === 3);
