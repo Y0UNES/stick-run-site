@@ -3453,10 +3453,10 @@ function zExplode(b){
   for(const e of z.zombies) if(e.hp > 0 && Math.abs(e.x - b.x) < ZBOMB_R + ZTYPES[e.ty].w && b.h < ZTYPES[e.ty].h + 60) zHitZombie(e, ZBOMB_DMG);
 }
 
-function zHurt(d, fromX){
+function zHurt(d, fromX, soft){
   const m = zs.me;
-  m.hp -= d; m.inv = ZHIT_CD; m.slow = .8; pw.shake = reduceMotion ? 0 : .5;
-  m.wx = Math.max(0, m.wx + (m.wx >= fromX ? 1 : -1) * 35);
+  m.hp -= d; m.inv = soft ? .5 : ZHIT_CD; m.slow = soft ? .25 : .8; pw.shake = reduceMotion ? 0 : (soft ? .2 : .5);
+  m.wx = Math.max(0, m.wx + (m.wx >= fromX ? 1 : -1) * (soft ? 10 : 35));
   beep(170, 70, .2, 'sawtooth', .06);
   if(m.hp <= 0){
     m.hp = 0; m.down = true; m.vy = 300; m.downT = ZDOWN_TIME;
@@ -3509,8 +3509,11 @@ function zWaves(h, anchors, n, anyDown){
     z.wave = { k, left:Math.max(8, Math.min(150, Math.round((22 + 12 * k) * (1 + .6 * (n - 1)) * z.lv.wave))), t:0, acc:0 };
   }
   if(!z.bossDone && lead >= z.fin - ZWAVE_GAP && z.fin > ZWAVE_GAP){                         // the last 100 m: the big one
-    z.bossDone = true;
+    z.bossDone = true;                                                                          // it comes with a set number of zombies, and after those nobody small spawns any more
     zSpawnAt(anchors, 3, true);
+    const escort = Math.max(4, Math.round(14 * z.lv.wave * (1 + .5 * (n - 1))));
+    for(let i = 0; i < escort; i++) zSpawnAt(anchors, zType(1, 8), i % 2 === 0, true);
+    z.banner = { t:3.5, text:'الوحش الكبير ومعاه جيشه!' };
   }
 }
 function zSim(h, players){
@@ -3519,14 +3522,10 @@ function zSim(h, players){
   const anchors = standing.length ? standing : alive;
   zWaves(h, anchors, players.length, anyDown);
   z.wv = z.wave ? z.wave.k : 0;
-  if(z.zombies.some(e => e.ty === 3 && e.hp > 0) && anchors.length){                          // while the boss lives it keeps calling more
-    z.bossT = (z.bossT === undefined ? 4 : z.bossT) - h;
-    if(z.bossT <= 0){ z.bossT = 7; for(let i = 0; i < z.lv.minions; i++) zSpawnAt(anchors, zType(1, 8), i % 2 === 0, true); }
-  }
   z.spawnT -= h;
   if(z.calmT > 0) z.calmT -= h;
   const cap = z.wave ? 130 : Math.round((24 + 7 * (players.length - 1)) * (anyDown ? .5 : 1) * z.lv.spawn);
-  if(!z.wave && z.spawnT <= 0 && z.zombies.length < cap && anchors.length) zSpawn(anchors, players.length, anyDown ? 2.2 : (z.calmT > 0 ? 2.8 : 1));
+  if(!z.wave && !z.bossDone && z.spawnT <= 0 && z.zombies.length < cap && anchors.length) zSpawn(anchors, players.length, anyDown ? 2.2 : (z.calmT > 0 ? 2.8 : 1));
   for(const e of z.zombies){
     if(e.flash > 0) e.flash -= h;
     const Ty = ZTYPES[e.ty];
@@ -3542,8 +3541,8 @@ function zSim(h, players){
       if(Math.abs(dx) < ZTHROW_RANGE && e.cd <= 0){
         const x0 = e.x + e.dir * 14 * (Ty.h / 62), h0 = Ty.h * .72, sp = e.ty === 3 ? 390 : 430;
         const ex = tgt.wx - x0, ey = tgt.h + 36 - h0, L = Math.hypot(ex, ey) || 1;
-        z.proj.push({ id:z.pid++, x:x0, h:h0, vx:ex / L * sp, vy:ey / L * sp, t:2.6, dmg:Math.round((e.ty === 3 ? 30 : 14) * z.lv.proj) });
-        e.cd = e.ty === 3 ? 2.4 : 1.4 + z.rng() * 1.0; e.th = .3;
+        z.proj.push({ id:z.pid++, x:x0, h:h0, vx:ex / L * sp, vy:ey / L * sp, t:2.6, dmg:Math.max(1, Math.round((e.ty === 3 ? 30 : 7) * z.lv.proj)) });
+        e.cd = e.ty === 3 ? 2.4 : 2.0 + z.rng() * 1.2; e.th = .3;
       }
       if(e.ty !== 3 && Math.abs(dx) < ZTHROW_KEEP) continue;      // a thrower stops once it is close enough
     }
@@ -3629,7 +3628,7 @@ function zTick(h){
     for(const q of z.proj){
       if(z.pHit.has(q.id) || Math.abs(q.x - m.wx) > 18 || q.h < m.h - 8 || q.h > m.h + (m.down ? 26 : 72)) continue;
       z.pHit.add(q.id); q.t = 0;
-      if(m.down) zHurtDown(); else zHurt(q.dmg, q.x);
+      if(m.down) zHurtDown(); else zHurt(q.dmg, q.x, q.dmg < 20);
       break;
     }
   }
