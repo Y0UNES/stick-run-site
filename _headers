@@ -4,3 +4,9 @@
   X-Frame-Options: DENY
 /admin.html
   X-Robots-Tag: noindex, nofollow
+/sw.js
+  Cache-Control: no-cache
+  Service-Worker-Allowed: /
+/manifest.webmanifest
+  Content-Type: application/manifest+json
+  Cache-Control: no-cache

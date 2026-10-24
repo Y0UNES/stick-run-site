@@ -4,6 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ستيك رن</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1B2A41">
+<meta name="application-name" content="ستيك رن">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ستيك رن">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700&family=Lalezar&display=swap" rel="stylesheet">
@@ -294,6 +304,9 @@ body.vs .keys .k-atk{display:inline}
   .hud .score b{font-size:28px}
   .hud .item,.hud b{text-shadow:0 0 6px var(--paper),0 0 6px var(--paper)}
   .energy .bar{width:90px;height:12px;background:var(--veil)}
+  .hud b{min-width:3ch}
+  .hud .score b{min-width:4ch}
+  .hud .item,.mute{white-space:nowrap}
   .rooms{max-height:58px}
   .mute,#fs,#exitBtn,#acctBtn{pointer-events:auto;font-size:12px;padding:2px 10px;background:var(--veil)}
 
@@ -315,7 +328,7 @@ body.vs .keys .k-atk{display:inline}
   .rb-name{font-size:12px;text-shadow:0 0 4px var(--paper),0 0 4px var(--paper)}
 
   .controls{position:absolute;inset:0;z-index:6;display:block;pointer-events:none;direction:ltr}
-  .pad{position:absolute;pointer-events:auto;border-radius:50%;background:var(--padbg);background:color-mix(in srgb,var(--paper) 40%,transparent);border-width:3px;flex-direction:column;gap:0;font-size:12px;line-height:1.1;padding:0}
+  .pad{position:absolute;pointer-events:auto;border-radius:50%;background:var(--padbg);background:color-mix(in srgb,var(--paper) var(--padpct,40%),transparent);border-width:3px;flex-direction:column;gap:0;font-size:12px;line-height:1.1;padding:0}
   .pad svg{width:24px;height:24px}
   /* right thumb: jump above slide. left thumb: back and forward side by side, sitting in the ground band */
   #jumpBtn{right:calc(12px + env(safe-area-inset-right,0px));bottom:100px;width:88px;height:88px;font-size:13px}
@@ -360,6 +373,17 @@ body.vs .keys .k-atk{display:inline}
   .gbtns .btn{font-size:16px;padding:5px 18px}
   .gmsg{margin-top:2px}
 }
+#padbar{position:fixed;top:4px;left:50%;transform:translateX(-50%);z-index:90;background:var(--paper);border:2px solid var(--ink);border-radius:14px;padding:4px 10px;display:flex;flex-direction:column;gap:4px;max-width:96vw;direction:rtl;font-size:12px;color:var(--ink);opacity:.96}
+#padbar[hidden]{display:none}
+#padbar .row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center}
+#padbar .chip{padding:1px 10px;min-height:0;font-size:12px}
+#padbar input[type=range]{width:90px;direction:ltr;vertical-align:middle}
+#padHint{color:var(--muted)}
+body.padedit .atk,body.padedit #medBtn{display:flex !important}
+body.padedit .controls{display:block !important}
+body.padedit .pad{outline:3px dashed var(--pencil);outline-offset:2px;touch-action:none}
+body.padedit .pad.sel{outline:3px solid var(--marker)}
+#installBtn[hidden],#padEditBtn[hidden]{display:none}
 </style>
 </head>
 <body>
@@ -371,6 +395,7 @@ body.vs .keys .k-atk{display:inline}
     <div class="item energy"><span id="energyLbl">الطاقة</span> <span class="bar" id="ebar"><i id="efill"></i></span></div>
     <button class="mute" id="acctBtn" type="button">دخول</button>
     <button class="mute" id="fs" type="button" hidden>ملء الشاشة</button>
+    <button class="mute" id="installBtn" type="button" hidden>ثبّت اللعبة</button>
     <button class="mute" id="exitBtn" type="button" hidden>خروج</button>
     <button class="mute" id="mute" type="button">الصوت شغال</button>
   </header>
@@ -397,7 +422,8 @@ body.vs .keys .k-atk{display:inline}
             <button class="chip" data-mode="zombie" type="button">زومبي</button>
             <button class="chip" data-mode="online" type="button">أونلاين</button>
           </div>
-          <div class="chips"><button class="chip" id="openStore" type="button">المتجر <span class="cdot"></span><b id="walletN">0</b></button></div>
+          <div class="chips"><button class="chip" id="openStore" type="button">المتجر <span class="cdot"></span><b id="walletN">0</b></button><button class="chip" id="padEditBtn" type="button" hidden>أزرار التحكم</button></div>
+          <div class="recline" id="padNote"></div>
           <div class="chips" id="lvlChips" role="group" aria-label="الصعوبة">
             <span class="opt-lbl">الصعوبة</span>
             <button class="chip" data-level="easy" type="button">سهل</button>
@@ -538,6 +564,24 @@ body.vs .keys .k-atk{display:inline}
     <p class="gt">السبب: <b id="banReason"></b></p>
     <p class="gt">لو شايف إن ده غلط، كلّم الدعم من هنا وهنراجع. وتقدر تلعب جري حر أو ضد الكمبيوتر عادي.</p>
     <div class="gbtns"><button class="btn" id="banSupport" type="button">كلّم الدعم</button><button class="chip" id="banClose" type="button">كمّل أوفلاين</button></div>
+  </div>
+</div>
+<div id="installHelp" class="gate" hidden>
+  <div class="gcard">
+    <h1>تثبيت اللعبة</h1>
+    <p class="gt" id="installText"></p>
+    <div class="gbtns"><button class="btn" id="installOk" type="button">تمام</button></div>
+  </div>
+</div>
+<div id="padbar" hidden role="toolbar" aria-label="تعديل أزرار التحكم">
+  <div class="row"><b id="padSel">اختار زرار</b><span id="padHint">اسحب أي زرار لمكان جديد، وكبّره بـ + و −</span></div>
+  <div class="row">
+    <button class="chip" id="padMinus" type="button" aria-label="تصغير">−</button>
+    <button class="chip" id="padPlus" type="button" aria-label="تكبير">+</button>
+    <label>الشفافية <input type="range" id="padOp" min="15" max="95" value="40"></label>
+    <button class="chip" id="padMirror" type="button">عكس الأماكن (أعسر)</button>
+    <button class="chip" id="padReset" type="button">الافتراضي</button>
+    <button class="chip" id="padDone" type="button" aria-pressed="true">تم</button>
   </div>
 </div>
 <div id="support" class="gate" hidden>
@@ -2079,6 +2123,7 @@ function layout(){
   HT = r.height / scale;
   compact = matchMedia('(orientation:landscape) and (pointer:coarse) and (max-height:600px)').matches;
   lanes = [{ key:'me', y0:0, h:HT }];
+  applyPads();
 }
 new ResizeObserver(layout).observe(stage);
 new ResizeObserver(() => fitCard(true)).observe(stage);
@@ -3903,6 +3948,96 @@ function drawZHud(z, m, cam){
   if(msg){ ctx.font = '700 17px "Cairo", sans-serif'; txt(msg, W / 2, HT * .2, C.ink); }
   ctx.restore();
 }
+
+
+
+/* ---------- touch controls: move and resize the buttons, saved on this phone ---------- */
+const PAD_SIZE = { jumpBtn:88, slideBtn:78, boostBtn:82, chargeBtn:82, brickBtn:76, tripBtn:70, grabBtn:70, medBtn:70 };
+const PAD_IDS = Object.keys(PAD_SIZE);
+const PAD_NAMES = { jumpBtn:'قفز', slideBtn:'انزلاق / نزول', boostBtn:'تسريع / قدام', chargeBtn:'شحن / ورا', brickBtn:'طوبة / نار', tripBtn:'كعبلة / كاتانا', grabBtn:'مسك / قنبلة', medBtn:'علاج' };
+let padCfg = {}, padOp = parseInt(load('stickrun:padop', '40'), 10) || 40, padEditing = false, padSel = null;
+try{ padCfg = JSON.parse(load('stickrun:pads', '{}')) || {}; }catch(e){ padCfg = {}; }
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function padSave(){ save('stickrun:pads', JSON.stringify(padCfg)); save('stickrun:padop', padOp); }
+// a saved layout only applies in the phone-sideways layout, where the buttons float over the game
+function applyPads(){
+  document.documentElement.style.setProperty('--padpct', padOp + '%');
+  for(const id of PAD_IDS){
+    const b = $(id), c = padCfg[id];
+    if(!compact || !c){ for(const k of ['left', 'top', 'right', 'bottom', 'width', 'height', 'transform']) b.style.removeProperty(k); continue; }
+    const sz = Math.round(PAD_SIZE[id] * c.s);
+    Object.assign(b.style, { left:(c.x * 100) + '%', top:(c.y * 100) + '%', right:'auto', bottom:'auto', width:sz + 'px', height:sz + 'px', transform:'translate(-50%,-50%)' });
+  }
+}
+// a button that has never been moved starts from where the stylesheet put it
+function padInit(id){
+  if(padCfg[id]) return padCfg[id];
+  const box = $('controls').getBoundingClientRect(), r = $(id).getBoundingClientRect();
+  return (padCfg[id] = { x:clamp((r.left + r.width / 2 - box.left) / (box.width || 1), .03, .97), y:clamp((r.top + r.height / 2 - box.top) / (box.height || 1), .05, .95), s:clamp(r.width / PAD_SIZE[id] || 1, .5, 1.8) });
+}
+function padNote(t){ const n = $('padNote'); n.textContent = t; clearTimeout(padNote.t); padNote.t = setTimeout(() => { n.textContent = ''; }, 4000); }
+function padSelect(id){
+  padSel = id;
+  for(const i of PAD_IDS) $(i).classList.toggle('sel', i === id);
+  $('padSel').textContent = id ? PAD_NAMES[id] : 'اختار زرار';
+}
+function padStart(){
+  if(!compact){ padNote('اقلب التليفون أفقي الأول عشان تعدّل الأزرار'); return; }
+  padEditing = true;
+  document.body.classList.add('padedit'); document.body.classList.remove('menu');
+  el.overlay.hidden = true; $('padbar').hidden = false; $('padOp').value = padOp;
+  PAD_IDS.forEach(padInit);
+  applyPads(); padSelect(padSel || 'jumpBtn');
+}
+function padStop(){
+  padEditing = false;
+  document.body.classList.remove('padedit'); $('padbar').hidden = true;
+  for(const i of PAD_IDS) $(i).classList.remove('sel');
+  el.overlay.hidden = false; document.body.classList.add('menu'); fitCard(true);
+  padSave();
+}
+$('padEditBtn').addEventListener('click', padStart);
+$('padDone').addEventListener('click', padStop);
+$('padMinus').addEventListener('click', () => { if(padSel){ const c = padInit(padSel); c.s = clamp(c.s - .1, .5, 1.8); applyPads(); padSave(); } });
+$('padPlus').addEventListener('click', () => { if(padSel){ const c = padInit(padSel); c.s = clamp(c.s + .1, .5, 1.8); applyPads(); padSave(); } });
+$('padOp').addEventListener('input', e => { padOp = +e.target.value; applyPads(); padSave(); });
+$('padMirror').addEventListener('click', () => { PAD_IDS.forEach(id => { const c = padInit(id); c.x = 1 - c.x; }); applyPads(); padSave(); });
+$('padReset').addEventListener('click', () => {
+  padCfg = {}; padOp = 40; $('padOp').value = 40;
+  applyPads();                                                  // back to the stylesheet's own layout...
+  PAD_IDS.forEach(padInit); applyPads();                        // ...which they can still be dragged from
+  save('stickrun:pads', '{}'); save('stickrun:padop', padOp);
+});
+addEventListener('keydown', e => { if(padEditing && e.code === 'Escape') padStop(); });
+// while editing, touching a button drags it instead of pressing it (this runs before the buttons' own handlers)
+$('controls').addEventListener('pointerdown', e => {
+  if(!padEditing) return;
+  const b = e.target.closest('.pad');
+  if(!b) return;
+  e.stopPropagation(); e.preventDefault();
+  padSelect(b.id);
+  const c = padInit(b.id), box = $('controls').getBoundingClientRect(), sx = e.clientX, sy = e.clientY, ox = c.x, oy = c.y;
+  const mv = ev => { c.x = clamp(ox + (ev.clientX - sx) / box.width, .03, .97); c.y = clamp(oy + (ev.clientY - sy) / box.height, .05, .95); applyPads(); };
+  const up = () => { removeEventListener('pointermove', mv); removeEventListener('pointerup', up); removeEventListener('pointercancel', up); padSave(); };
+  addEventListener('pointermove', mv); addEventListener('pointerup', up); addEventListener('pointercancel', up);
+}, true);
+if(matchMedia('(pointer:coarse)').matches) $('padEditBtn').hidden = false;
+
+/* ---------- install it like an app ---------- */
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches || navigator.standalone === true;
+let deferredInstall = null;
+function paintInstall(){ $('installBtn').hidden = isStandalone() || !(deferredInstall || isIOS); }
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstall = e; paintInstall(); });
+addEventListener('appinstalled', () => { deferredInstall = null; paintInstall(); });
+$('installBtn').addEventListener('click', async () => {
+  if(deferredInstall){ const d = deferredInstall; deferredInstall = null; try{ d.prompt(); await d.userChoice; }catch(e){} paintInstall(); return; }
+  $('installText').textContent = isIOS ? 'اضغط زرار المشاركة في سفاري (المربع اللي فيه سهم لفوق)، وبعدين «إضافة إلى الشاشة الرئيسية».' : 'من قايمة المتصفح اختار «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».';
+  $('installHelp').hidden = false;
+});
+$('installOk').addEventListener('click', () => { $('installHelp').hidden = true; });
+paintInstall();
+if('serviceWorker' in navigator && location.protocol !== 'file:') addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
 
 
 /* ---------- updates: when a new version is published, everybody who isn't racing reloads ---------- */
