@@ -140,6 +140,7 @@ body:not(.zm) #medBtn{display:none !important}
 body.zm #keys,body.fm #keys,body:not(.zm) #zkeys,body:not(.fm) #fkeys{display:none !important}
 .stage.two .card{padding:8px 18px;max-width:min(96%,780px)}
 .stage.two .opts{display:flex;flex-wrap:wrap;justify-content:center;column-gap:16px}
+.stage.two .opts[hidden]{display:none}
 .stage.two .opts .online,.stage.two .opts .recline,.stage.two .opts #dailyLine,.stage.two .opts .how{flex-basis:100%}
 .stage.two .chip{padding:3px 12px;font-size:14px}
 .stage.two .opts .chips{margin-bottom:6px;gap:6px}
@@ -352,6 +353,7 @@ body.vs .keys .k-atk{display:inline}
   .card{padding:6px 14px;max-width:min(92%,620px)}
   .card h1{font-size:30px;line-height:1.1}
   .opts{display:flex;flex-wrap:wrap;justify-content:center;column-gap:14px}
+  .opts[hidden]{display:none}
   .opts .chips{margin-bottom:4px}
   .opts .online,.opts .recline,.opts #dailyLine,.opts .how{flex-basis:100%}
   .card .txt{margin:4px 0 8px;font-size:13px;line-height:1.5}
@@ -444,6 +446,13 @@ body.padedit .pad.sel{outline:3px solid var(--marker)}
             <button class="chip" data-level="mid" type="button">متوسط</button>
             <button class="chip" data-level="hard" type="button">صعب</button>
           </div>
+          <div class="chips" id="tourChips" role="group" aria-label="نظام القتال" hidden>
+            <span class="clbl">النظام</span>
+            <button class="chip" data-tour="0" type="button">مباراة واحدة</button>
+            <button class="chip" data-tour="2" type="button">بطولة أول لـ 2</button>
+            <button class="chip" data-tour="3" type="button">بطولة أول لـ 3</button>
+            <button class="chip" data-tour="5" type="button">بطولة أول لـ 5</button>
+          </div>
           <div class="chips" id="cpuChips" role="group" aria-label="عدد الكمبيوتر">
             <span class="clbl">الكمبيوتر</span>
             <button class="chip" data-cpu="1" type="button">1</button>
@@ -465,7 +474,7 @@ body.padedit .pad.sel{outline:3px solid var(--marker)}
             <button class="chip" data-pl="6" type="button">6</button>
           </div>
           <details class="how" id="zHow" hidden><summary>طريقة لعب الزومبي</summary><div>اوصل لآخر الطريق. الزومبي بييجوا من قدام ومن ورا، ومبيعرفوش يطلعوا فوق المنصات (بيعدّوا من تحتها). كل 100 متر فيه موجة كبيرة، وفي آخر 100 متر وحش ضخم. امشي قدام وورا بالأسهم (وكل ما صحتك تقل مشيتك تبقى أبطأ)، واقفز مرتين، واضرب بـ F أو Q، وبالكاتانا E (مدى طويل)، وبالقنابل R، واتعالج بـ H. تقدر تشيل علاجين و4 قنابل. الكاتانا ضربتها قوية. بعد ما الوحش الكبير يموت الزومبي العاديين بيرجعوا، وقبل النهاية بـ 50 متر فيه موجة أخيرة أكبر من أي موجة. على الأرض الضرب في الناحية اللي بتبصلها، ولو فوق منصة والزومبي تحتك التصويب بيروح ناحيتهم لوحده. السهم لتحت بينزلك من المنصة. لو وقعت عندك 30 ثانية: تقدر تضرب بس أبطأ، وزميلك لو وقف جنبك 5 ثواني متواصلة يقومك (مرتين بس في الجولة). النتيجة نقاط وأرقام قياسية بس.</div></details>
-          <details class="how" id="fHow" hidden><summary>طريقة لعب القتال</summary><div>من 2 لـ 4 ستيك مان في ساحة واحدة على شاشة واحدة، وآخر واحد واقف يكسب. كل لاعب لون (واسكينك فوق راسه). الأسلحة بتنزل من السما في صناديق بباراشوت: امشي على الصندوق تاخد السلاح لو إيدك فاضية، ودوس «التقاط» (E) عشان تبدّل اللي معاك. 8 أسلحة: ليزر (شعاع يعدّي في كل اللي قدامك)، قاذف تعابين (التعبان بيجري على أقرب خصم ويقفز وراه)، صواريخ (انفجار بيرمي اللي حواليه)، قوس وسهم، أوزي، قنابل (بتنط وتفرقع)، بندقية رش، وسيف طويل (بيتكسر مع الوقت ومع كل ضربة). كل سلاح معاه خزنة واحدة، ولما تخلص بتتخلص منه وترجع تضرب بإيدك. الضربة القوية بترمي الخصم بعيد، ولما حد يتهزم جسمه بيقع ويتدحرج. الساحة بتقتل: منشار بيلف على الأرض، أشواك بتطلع (بتنور قبلها)، وجدار نار واطي بيكنس الأرض (اقفز فوقه أو اطلع منصة). وبعد 16 ثانية الحمم بتطلع وبتغرّق الأرض والمنصات واحدة واحدة، فاطلع لفوق. الاندفاع (Shift) بيعدّيك من أي ضربة أو فخ لحظة صغيرة. ضد الكمبيوتر أو أونلاين (غرفة قتال من 2 لـ 4).</div></details>
+          <details class="how" id="fHow" hidden><summary>طريقة لعب القتال</summary><div>من 2 لـ 4 ستيك مان في ساحة واحدة على شاشة واحدة، وآخر واحد واقف يكسب الجولة. اختار «مباراة واحدة» أو «بطولة»: في البطولة بتتلعب جولات ورا بعض (الجولة الجاية بتبدأ لوحدها بعد ما تشوف الترتيب)، وأول واحد يكسب العدد المطلوب من الجولات ياخد البطولة، وكل جولة بتدّي نقط حسب مكانك (3 و2 و1) وبتتحسب القتلى. كل لاعب لون (واسكينك فوق راسه). الأسلحة بتنزل من السما في صناديق بباراشوت: امشي على الصندوق تاخد السلاح لو إيدك فاضية، ودوس «التقاط» (E) عشان تبدّل اللي معاك. 8 أسلحة: ليزر (شعاع يعدّي في كل اللي قدامك)، قاذف تعابين (التعبان بيجري على أقرب خصم ويقفز وراه)، صواريخ (انفجار بيرمي اللي حواليه)، قوس وسهم، أوزي، قنابل (بتنط وتفرقع)، بندقية رش، وسيف طويل (بيتكسر مع الوقت ومع كل ضربة). كل سلاح معاه خزنة واحدة، ولما تخلص بتتخلص منه وترجع تضرب بإيدك. الضربة القوية بترمي الخصم بعيد، ولما حد يتهزم جسمه بيقع ويتدحرج. الساحة بتقتل: منشار بيلف على الأرض، أشواك بتطلع (بتنور قبلها)، وجدار نار واطي بيكنس الأرض (اقفز فوقه أو اطلع منصة). وبعد 16 ثانية الحمم بتطلع وبتغرّق الأرض والمنصات واحدة واحدة، فاطلع لفوق. الاندفاع (Shift) بيعدّيك من أي ضربة أو فخ لحظة صغيرة. أونلاين: صاحب الغرفة بيختار النظام، ولو لاعب مش جاهز في وقته بيتشال عشان ميوقّفش الباقيين.</div></details>
           <div class="recline" id="eventLine"></div>
           <div class="recline" id="recLine"></div>
           <div class="long" id="dailyLine"></div>
@@ -1252,7 +1261,6 @@ function openChannel(code){
   ch.on('broadcast', { event:'z' }, msg => zOnSnap(msg && msg.payload));       // the host's zombies
   ch.on('broadcast', { event:'zh' }, msg => zOnHit(msg && msg.payload));       // somebody hit one of them
   ch.on('broadcast', { event:'zr' }, msg => zOnRevive(msg && msg.payload));    // a teammate picked me up
-  ch.on('broadcast', { event:'fh' }, msg => fOnHit(msg && msg.payload));       // a fighter hit me
   ch.subscribe(status => { net.connected = status === 'SUBSCRIBED'; });
   net.chan = ch;
 }
@@ -1300,6 +1308,7 @@ async function joinRoom(opts){
         catch(e){ if(!/room exists/.test(e.message) || i >= 3) throw e; }
       }
       if(kind === 'zombie' && zLevel !== 'mid'){ try{ st = await rpc('zroom_level', { p_level:zLevel }); }catch(e){} }
+      if(kind === 'fight'){ try{ st = await rpc('ftour_set', { p_target:fTourTarget }); }catch(e){} }
     }else st = await rpc(zombie ? 'zroom_join' : 'room_join', { p_code:code });
     enterRoom(st);
   }catch(e){ net.err = errAr(e); }
@@ -1385,7 +1394,7 @@ function updateOnlineUi(){
     if(r.status === 'running'){ msg = r.kind === 'fight' ? 'فيه قتال شغال في الغرفة، استنى لحد ما يخلص.' : 'فيه سباق شغال في الغرفة، استنى لحد ما يخلص.'; label = r.kind === 'fight' ? 'القتال شغال' : 'السباق شغال'; }
     else if(n < 2){ msg = 'أنت في الغرفة ' + r.code + ' (1/' + r.max + '). مستني لاعبين يدخلوا نفس الكود.' + (r.kind === 'fight' ? ' قتال لحد ' + r.max + ' لاعبين.' : ' السباق: ' + r.length_m + ' م.'); label = 'مستني اللاعبين'; }
     else if(iReady){ msg = 'مستني الباقيين... (' + readyN + '/' + n + ' جاهزين)'; label = 'مستني الباقيين'; }
-    else if(r.kind === 'fight'){ msg = 'غرفة قتال ' + n + '/' + r.max + '. جاهزين ' + readyN + '/' + n + '. دوس جاهز. كل واحد لوحده، والأسلحة بتنزل من السما، وآخر واحد واقف يكسب. من غير رسوم.'; can = true; }
+    else if(r.kind === 'fight'){ msg = 'غرفة قتال ' + n + '/' + r.max + '. جاهزين ' + readyN + '/' + n + '. دوس جاهز. كل واحد لوحده، والأسلحة بتنزل من السما، وآخر واحد واقف يكسب. ' + (r.tour && r.tour.target ? 'بطولة: أول واحد يكسب ' + r.tour.target + ' جولات.' : 'مباراة واحدة.') + ' من غير رسوم.'; can = true; }
     else if(r.kind === 'zombie'){ msg = 'غرفة زومبي جماعية (' + (ZLV[r.level] || ZLV.mid).name + ') ' + n + '/' + r.max + '. جاهزين ' + readyN + '/' + n + '. دوس جاهز. اتعاونوا وصّلوا لآخر الطريق (' + r.length_m + ' م) من غير رسوم، والنتيجة نقاط بس.'; can = true; }
     else{ msg = 'في الغرفة ' + n + '/' + r.max + '. جاهزين ' + readyN + '/' + n + '. دوس جاهز. الدخول ' + net.fee + ' عملات والفايز ياخد ' + net.prize + '. طول السباق ' + r.length_m + ' م.'; can = true; }
     if(net.err) msg = net.err + ' — ' + msg;
@@ -1398,7 +1407,7 @@ function updateOnlineUi(){
   $('lvlChips').hidden = !(zombieCtx() || mode === 'race');
   $('lenChips').hidden = mode === 'free' || fightCtx();
   el.ovOpts.querySelectorAll('[data-level]').forEach(b => b.setAttribute('aria-pressed', b.dataset.level === (zombieCtx() ? zCtxLevel() : level) ? 'true' : 'false'));
-  paintLen(); paintPl(); paintRooms();
+  paintLen(); paintPl(); paintRooms(); paintTour();
   fApplyUi();
   fitCard(false);
 }
@@ -1409,13 +1418,22 @@ async function pollRoom(){
   net.polling = true;
   try{
     const st = await rpc(isZRoom() ? 'zroom_state' : 'room_state', { p_code:net.code });
-    if(!st){ closeChannel(); net.room = null; net.code = ''; net.err = 'الغرفة اتقفلت.'; }
-    else{
+    if(!st){
+      closeChannel(); net.room = null; net.code = '';
+      net.err = (fs && fs.online && fs.tourT > 0) ? 'اتشلت من الغرفة (لازم تدوس جاهز في الوقت)' : 'الغرفة اتقفلت.';
+      if(fOn && fs && fs.online && fs.over) exitToMenu();
+    }else{
       net.room = st;
       if(st.length_m && !net.raceId) setRaceLen(st.length_m);
       if(el.overlay.hidden === false && !el.ovOpts.hidden) updateOnlineUi();        // show who joined or got ready right away
       const lobby = state === 'ready' || (state === 'finished' && endShown);
-      if(lobby && iAmOwner() && st.status === 'open' && st.members.length >= 2 && st.members.every(m => m.ready) && !net.starting && performance.now() > net.blockUntil) ((st.kind === 'zombie' || st.kind === 'fight') ? startZombieAsOwner() : startRaceAsOwner());
+      const readyN = st.members.filter(m => m.ready).length, allReady = readyN === st.members.length, isZF = st.kind === 'zombie' || st.kind === 'fight';
+      const tourOn = !!(fs && fs.online && fs.over && fs.tourT > 0);
+      if(tourOn && !fs.reported && iAmOwner()) fTourReport();                         // the owner writes the round's result
+      const holdStart = tourOn && !fs.reported && iAmOwner();
+      const tc = tourOn ? fTourCur() : null;
+      const forced = !!(tc && !tc.done && (tc.round | 0) >= fs.round && fs.stand0 && performance.now() - fs.stand0 > 14000 && readyN >= 2);     // somebody is gone: carry on without them
+      if(lobby && iAmOwner() && (st.status === 'open' || (forced && st.kind === 'fight')) && st.members.length >= 2 && (allReady || (forced && st.kind === 'fight')) && !holdStart && !net.starting && performance.now() > net.blockUntil) (isZF ? startZombieAsOwner(!allReady) : startRaceAsOwner());
       if(lobby && !iAmOwner() && st.status === 'running'){
         if(st.kind === 'zombie' || st.kind === 'fight'){ const r = await rpc('my_zombie'); if(r && r.run_id !== net.zrun) zBeginCoop(r); }
         else{ const r = await rpc('my_race'); if(r && r.race_id !== net.raceId) beginRace(r); }
@@ -1440,11 +1458,12 @@ async function startRaceAsOwner(){
   net.starting = false;
 }
 
-async function startZombieAsOwner(){
+async function startZombieAsOwner(force){
   net.starting = true;
   try{
-    const r = await rpc('zombie_start');
+    const r = await rpc('zombie_start', force ? { p_force:true } : {});
     if(r && r.run_id){
+      net.err = '';
       if(net.chan && net.connected){ try{ net.chan.send({ type:'broadcast', event:'g', payload:{ zrun:r } }); }catch(e){} }
       zBeginCoop(r);
     }
@@ -1666,7 +1685,8 @@ const ERR_AR = {
   'room exists':'الكود ده مستخدم', 'bad code':'الكود حروف إنجليزي وأرقام بس', 'not everyone is ready':'مش كل اللاعبين جاهزين',
   'need 2 players':'محتاج لاعبين اتنين على الأقل', 'a player is banned':'فيه لاعب محظور في الغرفة', 'forbidden':'مش مسموحلك',
   'not done yet':'لسه ما خلصتش التحدي ده', 'already claimed':'خدت المكافأة دي النهاردة', 'no reward':'المكافآت اليومية واقفة دلوقتي',
-  'too many players for that size':'فيه لاعبين أكتر من الحجم ده', 'not the owner':'بس صاحب الغرفة يعمل كده', 'offline':'السيرفر مش متاح'
+  'too many players for that size':'فيه لاعبين أكتر من الحجم ده', 'not the owner':'بس صاحب الغرفة يعمل كده', 'offline':'السيرفر مش متاح',
+  'tournament running':'فيه بطولة شغالة في الغرفة دي، مينفعش تدخل فيها دلوقتي', 'bad size':'القتال من 2 لـ 4 لاعبين', 'already running':'الغرفة شغالة دلوقتي', 'no tournament':'مفيش بطولة في الغرفة دي', 'not a fight room':'ده مش غرفة قتال'
 };
 function errAr(e){
   const m = String((e && e.message) || e || '');
@@ -2296,14 +2316,20 @@ function setRaceLen(m){
   uiMe = uiCpu = -1;
 }
 function paintPl(){
-  const shown = net.room ? net.room.max : roomMax;
+  const shown = Math.min(net.room ? net.room.max : roomMax, fightCtx() ? 4 : 9);
   el.ovOpts.querySelectorAll('[data-pl]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.pl === shown ? 'true' : 'false'));
 }
 function paintLen(){
   const shown = net.room ? net.room.length_m : raceM;
   el.ovOpts.querySelectorAll('[data-len]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.len === shown ? 'true' : 'false'));
 }
+const fTourShown = () => (mode === 'online' && net.room && net.room.kind === 'fight') ? ((net.room.tour && net.room.tour.target) | 0) : fTourTarget;
+function paintTour(){
+  $('tourChips').hidden = !fightCtx();
+  el.ovOpts.querySelectorAll('[data-tour]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.tour === fTourShown() ? 'true' : 'false'));
+}
 function paintOpts(){
+  paintTour();
   el.ovOpts.querySelectorAll('[data-mode],[data-level],[data-cpu],[data-kind]').forEach(b => {
     const on = (b.dataset.mode && b.dataset.mode === mode) || (b.dataset.level && b.dataset.level === (zombieCtx() ? zCtxLevel() : level)) || (b.dataset.cpu && +b.dataset.cpu === cpuN) || (b.dataset.kind && b.dataset.kind === (net.room ? (net.room.kind || 'race') : roomKind));
     b.setAttribute('aria-pressed', on ? 'true' : 'false');
@@ -2331,7 +2357,7 @@ el.ovOpts.addEventListener('click', async e => {
   if(!b) return;
   if(b.dataset.mode){
     const prev = mode;
-    mode = b.dataset.mode; save('stickrun:mode', mode);
+    mode = b.dataset.mode; save('stickrun:mode', mode); fTourOff = null;
     if(prev === 'online' && mode !== 'online') leaveRoomNow();
     if(mode === 'online'){ if(!acct.signedIn) showAuth('سجّل دخول عشان تلعب أونلاين'); else if(acct.ban) showBanned(); else pollRooms(); }
     newWorlds();
@@ -2341,6 +2367,11 @@ el.ovOpts.addEventListener('click', async e => {
       if(mode === 'online' && net.room){ if(iAmOwner()){ try{ net.room = await rpc('zroom_level', { p_level:b.dataset.level }); net.err = ''; }catch(err){ net.err = errAr(err); } } }
       else{ zLevel = b.dataset.level; save('stickrun:zlevel', zLevel); applyMode(); }
     }else{ level = b.dataset.level; save('stickrun:level', level); }
+  }
+  if(b.dataset.tour !== undefined){                  // single match, or a tournament (the room's owner sets it online)
+    const v = +b.dataset.tour;
+    if(mode === 'online' && net.room){ if(iAmOwner()){ try{ net.room = await rpc('ftour_set', { p_target:v }); net.err = ''; }catch(err){ net.err = errAr(err); } } }
+    else{ fTourTarget = v; save('stickrun:ftour', v); fTourOff = null; }
   }
   if(b.dataset.kind && !net.room){ roomKind = b.dataset.kind; save('stickrun:kind', roomKind); if(roomKind === 'fight' && roomMax > 4){ roomMax = 4; save('stickrun:pl', 4); } }
   if(b.dataset.cpu){ cpuN = +b.dataset.cpu; save('stickrun:cpus', cpuN); newWorlds(); }
@@ -2402,7 +2433,7 @@ function exitToMenu(){
   if(zOn && zs && zs.coop && !zs.over){ pres({ qt:1 }); setTimeout(() => pres({ qt:null }), 1500); zNetEnd(); }
   if(fOn && fs && fs.online && !fs.over){ pres({ qt:1 }); setTimeout(() => pres({ qt:null }), 1500); fNetEnd(); }
   if(state !== 'ready') bankRun();
-  state = 'ready'; endShown = false; goT = 0;
+  state = 'ready'; endShown = false; goT = 0; fTourOff = null;
   slideHeld = boostHeld = chargeHeld = grabHeld = false; syncPad();
   newWorlds(); applyMode(); showReady();
 }
@@ -3095,10 +3126,13 @@ function frame(now){
   }else if(state === 'countdown'){
     allWorlds().forEach(w => { w.P.phase += dt * 9; });
     const n = Math.ceil(cdT);
+    if(fOn && fs && fs.online && fs.go) cdT = (fs.go - performance.now()) / 1000 + dt;      // everybody counts down to the same moment, whatever their frame rate
     cdT -= dt;
     if(cdT <= 0){ state = 'playing'; goT = .7; beep(880, 1320, .25, 'square', .05); }
     else if(Math.ceil(cdT) !== n){ beep(440, 440, .12, 'square', .04); }
+    if(fOn && fs && fs.online) fSendPresence();                                              // so the others see you in your place while it counts down
   }
+  if(fOn && fs && fs.over) fTourFrame();
   if(mode === 'online'){
     onlineTick(dt);
     if(state === 'playing') for(const o of opps) if(o.kind === 'remote' && !o.dnf) stepRemote(o, dt);
@@ -4069,7 +4103,7 @@ function fNewFighter(id, name, skin, ci, remote){
   return { id, name:String(name || 'لاعب').slice(0, 10), skin:SKIN_BY_ID[skin] ? skin : 'base', ci, remote:!!remote,
            x:0, h:0, vx:0, vy:0, on:true, jumps:2, face:1, hp:FHP, dead:false, dt:0, killer:null, kills:0, weapon:null, cd:0, flash:0, inv:0, stun:0, kb:0,
            dashT:0, dashCd:0, phase:0, dropT:0, pickT:0, slashT:0, aim:0, aimV:0, rec:0, sq:0, dustT:0, gone:false, lastHit:null, rag:null, deadKb:0,
-           fq:0, bs:0, es:0, slPrev:0, dsPrev:0, lastBeam:null, lastEx:null,
+           fq:0, bs:0, es:0, slPrev:0, dsPrev:0, lastBeam:null, lastEx:null, hseq:0, hits:[], rname:String(name || 'لاعب').slice(0, 10),
            input:{ dir:0, down:false, fire:false, tap:false, pick:false, holdJ:false }, ai:{ think:0, hopT:0, holdT:0, faceTo:null },
            tx:undefined, th:0, sn:null, pj:[], snk:[], pjT:0, t0:performance.now(), tk:[] };
 }
@@ -4082,11 +4116,13 @@ function fBegin(o){
   if(o.online){
     (o.all || []).forEach((p, i) => {
       const mine = p.id === acct.id, f = fNewFighter(p.id, mine ? 'أنت' : p.name, mine ? acct.skin : p.skin, i, !mine);
+      f.rname = String((mine ? acct.name : p.name) || 'لاعب').slice(0, 10);
       fighters.push(f); if(mine) me = f;
     });
   }
   if(!me){
     me = fNewFighter(o.online ? acct.id : 'me', 'أنت', acct.skin, 0, false);
+    me.rname = String(acct.name || 'أنت').slice(0, 10);
     fighters.push(me);
   }
   if(!o.online){
@@ -4102,10 +4138,18 @@ function fBegin(o){
   const n = fighters.length, order = fighters.slice();
   if(o.online) order.sort((a, b) => (a.id < b.id ? -1 : 1));      // the same spots on every screen
   order.forEach((f, i) => { f.x = 110 + (FAW - 220) * (n === 1 ? .5 : i / (n - 1)); f.face = f.x < FAW / 2 ? 1 : -1; });
+  fighters.forEach(f => { if(f.remote){ f.tx = f.x; f.th = 0; } });             // drawn in their place right away
   const stars = []; for(let i = 0; i < 36; i++) stars.push([r() * W, r(), r() * 6]);
   fs = { t:0, seed, online:!!o.online, run:o.run || null, myId:me.id, me, fighters, crates:fCrates(seed), sph:[r() * FSPIKE_CYCLE, r() * FSPIKE_CYCLE, r() * FSPIKE_CYCLE],
          proj:[], snakes:[], fx:[], beams:[], parts:[], nums:[], kos:[], pid:1, rng:mulberry32(seed ^ 0xABCD), ai:FAI[level] || FAI.mid, over:false, ended:false, lastSend:0, banner:null,
-         lavaSaid:false, beamSaid:false, hs:0, theme:FTHEMES[seed % FTHEMES.length], stars };
+         lavaSaid:false, beamSaid:false, hs:0, theme:FTHEMES[seed % FTHEMES.length], stars,
+         go:o.go || 0, tag:o.run ? String(o.run).slice(0, 8) : '', tourT:0, round:1, reported:false, reporting:false, tourShownAt:0, stand0:0, tourPainted:-1, autoAt:0, champCounted:false };
+  // a tournament: the rounds so far (against the computer they are kept here, online the room keeps them)
+  const tourT = o.online ? ((net.room && net.room.tour && net.room.tour.target) | 0) : fTourTarget;
+  if(!o.online){ if(tourT > 0 && (!fTourOff || fTourOff.done || fTourOff.target !== tourT)) fTourOff = fTourNew(tourT); else if(tourT === 0) fTourOff = null; }
+  fs.tourT = tourT;
+  const prevSt = o.online ? ((net.room && net.room.tour && net.room.tour.state) || {}) : (fTourOff || {});
+  fs.round = (prevSt.done ? 0 : (prevSt.round | 0)) + 1;
   fOn = true;
   fApplyUi();
   Object.assign(pw, { scroll:0, dist:0, coinCount:0, energy:FHP, ammo:0, score:0, pop:null, shake:0 });
@@ -4120,7 +4164,8 @@ function fBeginOnline(r){
   pw = makeWorld(Number(r.seed), true); pw.skin = acct.skin; pw.look = acct.projectile;
   opps = [];
   const all = (r.players || []).slice().sort((a, b) => (a.id < b.id ? -1 : 1));
-  fBegin({ online:true, seed:Number(r.seed), run:r.run_id, all });
+  fBegin({ online:true, seed:Number(r.seed), run:r.run_id, all, go:performance.now() + Math.max(0, delay) * 1000 });
+  fTourSync();
   lastScore = lastCoins = lastE = lastAmmo = uiMe = uiCpu = -1; lastBoosting = null;
   buildRaceBar(); updateHud();
   endShown = false; newBest = false; goT = 0;
@@ -4246,16 +4291,14 @@ function fHit(by, v, d, dir, kb, k){
   if(v.remote){
     v.flash = .1;
     fImpact(v, d, k);
-    if(net.chan && net.connected){ try{ net.chan.send({ type:'broadcast', event:'fh', payload:{ u:fs.myId, to:v.id, d:Math.round(d), dir, kb:Math.round(kb), k } }); }catch(e){} }
+    if(by && by.hits){ by.hseq++; by.hits.push([by.hseq, v.id, Math.round(d), dir, Math.round(kb), k]); if(by.hits.length > 10) by.hits.shift(); }
     return;
   }
   fHurt(v, d, dir, kb, by, k);
 }
-function fOnHit(p){
-  if(!fOn || !fs || !fs.online || !p || p.to !== fs.myId || fs.over) return;
-  const by = fs.fighters.find(f => f.id === p.u);
-  if(!by) return;
-  fHurt(fs.me, Math.max(0, Math.min(60, p.d | 0)), p.dir >= 0 ? 1 : -1, Math.max(0, Math.min(600, p.kb | 0)), by, p.k);
+function fApplyRemoteHit(by, e){                                  // somebody's hit on me, read from their presence
+  if(!fOn || !fs || !fs.online || fs.over || !by || e[1] !== fs.myId) return;
+  fHurt(fs.me, Math.max(0, Math.min(60, e[2] | 0)), e[3] >= 0 ? 1 : -1, Math.max(0, Math.min(600, e[4] | 0)), by, e[5]);
 }
 function fHurt(v, d, dir, kb, by, k){
   if(v.dead || fs.over || fs.t < FSAFE) return;
@@ -4269,7 +4312,7 @@ function fHurt(v, d, dir, kb, by, k){
 }
 function fDie(v, by, why){
   if(v.dead) return;
-  v.hp = 0; v.dead = true; v.dt = fs.t; v.killer = by ? by.id : (why || 'hazard'); v.weapon = null; v.deadKb = why === 'lava' ? 0 : v.kb;
+  v.hp = 0; v.dead = true; v.dt = Math.round(fs.t * 100) / 100; v.killer = by ? by.id : (why || 'hazard'); v.weapon = null; v.deadKb = why === 'lava' ? 0 : v.kb;
   if(by && !by.remote && by !== v) by.kills++;
   fMakeRag(v, v.deadKb, why === 'lava' ? 0 : 320 + Math.abs(v.kb) * .35);
   fs.kos.push({ x:v.x, h:v.h, t:.9 });
@@ -4457,10 +4500,12 @@ function fRemotes(h){
   const now = performance.now();
   for(const f of fs.fighters){
     if(!f.remote) continue;
-    const sn = net.states[f.id];
+    let sn = net.states[f.id];
+    if(sn && sn.rn !== fs.tag) sn = null;                           // still the last round's numbers
     if(sn && sn !== f.sn){
       if(f.tx === undefined){ f.x = sn.x; f.h = sn.h; }
-      f.sn = sn; f.tx = sn.x; f.th = sn.h; f.on = sn.on === 1; f.face = sn.fc || 1; f.hp = sn.hp;
+      f.sn = sn;
+      if(Array.isArray(sn.hl)){ let top = f.hseq; for(const e of sn.hl){ if(e[0] > f.hseq){ fApplyRemoteHit(f, e); if(e[0] > top) top = e[0]; } } f.hseq = top; } f.tx = sn.x; f.th = sn.h; f.on = sn.on === 1; f.face = sn.fc || 1; f.hp = sn.hp;
       if(!f.dead){
         f.weapon = sn.w >= 0 && FWKEYS[sn.w] ? { k:FWKEYS[sn.w], ammo:sn.am | 0, dur:0 } : null;
         if(sn.sl === 1 && f.slPrev !== 1) f.slashT = f.weapon ? .2 : .16;
@@ -4497,18 +4542,19 @@ function fRemotes(h){
     if(f.dashT > 0) f.dashT -= h;
     f.aimV += (f.aim - f.aimV) * Math.min(1, h * 16);
     const seen = net.seen[f.id];
-    if(!f.dead && !f.gone && ((seen && now - seen > 6000) || (!seen && now - f.t0 > 12000))){ f.gone = true; f.dead = true; f.dt = fs.t; f.killer = 'quit'; f.weapon = null; fMakeRag(f, 0, 100); }
+    if(!f.dead && !f.gone && ((seen && now - seen > 8000) || (!seen && now - f.t0 > 12000))){ f.gone = true; f.dead = true; f.dt = fs.t; f.killer = 'quit'; f.weapon = null; fMakeRag(f, 0, 100); }
   }
   // kills: everybody counts them from who the dead say killed them
   for(const f of fs.fighters) f.kills = fs.fighters.filter(o => o.dead && o.killer === f.id).length;
 }
 function fSendPresence(){
   const z = fs, m = z.me, now = performance.now();
-  if(!z.online || now - z.lastSend < 80) return;
+  const gap = z.fighters.filter(f => !f.dead && !f.gone).length <= 2 ? 90 : 110;       // a few messages less when there are more of us
+  if(!z.online || now - z.lastSend < gap) return;
   z.lastSend = now;
   Object.assign(net.mine, { x:Math.round(m.x * 10) / 10, h:Math.round(m.h), on:m.on ? 1 : 0, fc:m.face, hp:Math.round(m.hp), dd:m.dead ? 1 : 0, dt:m.dead ? Math.round(m.dt * 100) / 100 : 0, kb:m.dead ? m.killer : null, kv:m.dead ? Math.round(m.deadKb) : 0, k:m.kills,
     w:m.weapon ? FWKEYS.indexOf(m.weapon.k) : -1, am:m.weapon ? m.weapon.ammo : 0, fl:m.rec > 0 ? 1 : 0, sl:m.slashT > 0 ? 1 : 0, ds:m.dashT > 0 ? 1 : 0, aa:Math.round(m.aim * 100) / 100, fq:m.fq,
-    bs:m.bs, bm:m.lastBeam, es:m.es, ex:m.lastEx,
+    bs:m.bs, bm:m.lastBeam, es:m.es, ex:m.lastEx, rn:z.tag, hl:m.hits,
     pj:z.proj.filter(q => q.owner === m.id).map(q => [FWKEYS.indexOf(q.k), Math.round(q.x), Math.round(q.h), Math.round(q.vx), Math.round(q.vy)]),
     sn:z.snakes.filter(s => s.owner === m.id).map(s => [Math.round(s.x), Math.round(s.h), s.face]), tk:m.tk.slice(-8), sk:acct.skin });
   pushState();
@@ -4522,7 +4568,7 @@ function fNetEnd(){
 
 function fTick(h){
   const z = fs, m = z.me;
-  if(!z.over) z.t += h;
+  if(!z.over){ if(z.online && z.go) z.t = Math.max(0, (performance.now() - z.go) / 1000); else z.t += h; }      // online the traps follow the clock, not each phone's frame rate
   const t = z.t;
   let sh = h;                                                         // fighters, shots and bodies run on this one: it freezes on a hit and crawls once it's decided
   if(z.hs > 0){ z.hs -= h; sh = h * .1; } else if(z.over) sh = h * .4;
@@ -4635,10 +4681,131 @@ function fTick(h){
   // the hud numbers
   Object.assign(pw, { scroll:m.x, dist:Math.floor(t), coinCount:m.kills, energy:m.hp, ammo:m.weapon ? (m.weapon.ammo >= 0 ? m.weapon.ammo : Math.ceil(m.weapon.dur)) : 0 });
   // last one standing wins
-  if(!z.over && z.fighters.length >= 2 && alive.length <= 1 && t > FSAFE) fOver();
+  if(!z.over && z.fighters.length >= 2 && alive.length <= 1 && t > FSAFE){
+    // online, if the one left standing is somebody else, give their last message a moment to arrive: they may have fallen at the same time as me
+    const settled = !z.online || alive.length === 0 || alive[0] === m || (z.endAt && performance.now() - z.endAt > 700);
+    if(!z.endAt) z.endAt = performance.now();
+    if(settled) fOver();
+  }else z.endAt = 0;
+}
+
+/* --- tournament: rounds in a row, the first to N round wins takes the trophy --- */
+let fTourTarget = [0, 2, 3, 5].includes(parseInt(load('stickrun:ftour', '3'), 10)) ? parseInt(load('stickrun:ftour', '3'), 10) : 3;
+let fTourOff = null;                                                  // the standings of a tournament against the computer
+const FTOUR_PTS = [3, 2, 1, 0], FTOUR_WAIT = 6;
+const fTourNew = target => ({ target, round:0, wins:{}, pts:{}, kills:{}, names:{}, done:false, champ:null, last:null });
+function fTourApply(prev, ranked, target){                           // ranked: best first. The winner of the round gets a win, everybody points for their place
+  const st = { target, round:((prev && prev.round) | 0) + 1, wins:Object.assign({}, prev && prev.wins), pts:Object.assign({}, prev && prev.pts), kills:Object.assign({}, prev && prev.kills), names:Object.assign({}, prev && prev.names), done:false, champ:null, last:null };
+  ranked.forEach((r, i) => {
+    st.names[r.id] = String(r.name || 'لاعب').slice(0, 10);
+    st.pts[r.id] = (st.pts[r.id] | 0) + (FTOUR_PTS[i] || 0);
+    st.kills[r.id] = (st.kills[r.id] | 0) + (r.kills | 0);
+    if(st.wins[r.id] === undefined) st.wins[r.id] = 0;
+  });
+  const w = ranked[0];
+  st.wins[w.id] = (st.wins[w.id] | 0) + 1;
+  st.last = { w:w.id, r:ranked.map(r => r.id) };
+  if(st.wins[w.id] >= target){ st.done = true; st.champ = w.id; }
+  return st;
+}
+function fTourCur(){
+  const z = fs;
+  if(!z || !(z.tourT > 0)) return null;
+  return z.online ? ((net.room && net.room.tour && net.room.tour.state) || null) : fTourOff;
+}
+const fWinsOf = id => { const c = fTourCur(); return c && c.wins ? (c.wins[id] | 0) : 0; };
+async function fTourSync(){                                           // the round number and the system come from the room, not from what this phone remembers
+  const z = fs;
+  if(!z || !z.online || !sb || !net.code) return;
+  try{
+    const room = await rpc('zroom_state', { p_code:net.code });
+    if(!room || fs !== z) return;
+    net.room = room;
+    const t = room.tour || {}, prev = t.state || {};
+    z.tourT = t.target | 0;
+    z.round = (prev.done ? 0 : (prev.round | 0)) + 1;
+  }catch(e){}
+}
+async function fTourReport(){                                         // the owner writes the standings; the server refuses a round that doesn't follow the last, so nothing counts twice
+  const z = fs;
+  if(!z || !z.online || !(z.tourT > 0) || z.reported || z.reporting || !z.rank || !iAmOwner()) return;
+  z.reporting = true;
+  try{
+    for(let i = 0; i < 3 && fs === z; i++){
+      try{
+        const room = await rpc('zroom_state', { p_code:net.code });
+        const prev = (room && room.tour && room.tour.state) || {};
+        if((prev.round | 0) >= z.round){ if(room) net.room = room; break; }                    // somebody already wrote this round
+        if((prev.round | 0) !== z.round - 1 && !prev.done) break;                               // out of step, nothing safe to write
+        const base = prev.done ? fTourNew(z.tourT) : prev;
+        const r = await rpc('ftour_report', { p_round:z.round, p_state:fTourApply(base, z.rank.map(f => ({ id:f.id, name:f.rname, kills:f.kills })), z.tourT) });
+        if(r) net.room = r;
+        break;
+      }catch(e){ await new Promise(res => setTimeout(res, 800)); }
+    }
+  }catch(e){}
+  z.reported = true; z.reporting = false;
+}
+function fTourEnd(){                                                  // the round is over: the standings, then the next round on its own
+  const z = fs;
+  if(!z) return;
+  endShown = true; z.tourShownAt = performance.now(); z.tourPainted = -1; z.stand0 = 0;
+  fTourPaint();
+}
+function fTourPaint(){
+  const z = fs;
+  if(!z || !z.over) return;
+  const cur = fTourCur();
+  if(!cur || (cur.round | 0) < z.round){
+    showOverlay('الجولة ' + z.round + ' خلصت', 'بنحسب النتيجة...', 'استنى', false);
+    el.btn.disabled = true; z.tourPainted = -2;
+    return;
+  }
+  const me = z.myId, nm = id => id === me ? 'أنت' : esc(cur.names[id] || 'لاعب');
+  const ids = Object.keys(cur.names).sort((a, b) => (cur.wins[b] | 0) - (cur.wins[a] | 0) || (cur.pts[b] | 0) - (cur.pts[a] | 0) || (cur.kills[b] | 0) - (cur.kills[a] | 0));
+  const rows = ids.map((id, i) => (i + 1) + '. ' + (id === me ? '<strong>' + nm(id) + '</strong>' : nm(id)) + ' — ' + '★'.repeat(cur.wins[id] | 0) + '☆'.repeat(Math.max(0, cur.target - (cur.wins[id] | 0))) + ' — ' + (cur.pts[id] | 0) + ' نقطة — ' + (cur.kills[id] | 0) + ' قتيل');
+  let title, html = rows.join('<br>');
+  if(cur.done){
+    title = cur.champ === me ? 'أنت بطل البطولة!' : nm(cur.champ) + ' بطل البطولة';
+    if(cur.champ === me && !z.champCounted){ z.champCounted = true; fWins++; save('stickrun:fwins', fWins); el.best.textContent = fWins; }
+    html += '<br>انتصاراتك في القتال: <strong>' + fWins + '</strong>';
+  }else{
+    title = cur.last && cur.last.w === me ? 'كسبت الجولة ' + cur.round : nm(cur.last && cur.last.w) + ' كسب الجولة ' + cur.round;
+    html += '<br>أول واحد يكسب ' + cur.target + ' جولات ياخد البطولة.';
+  }
+  showOverlay(title, html, cur.done ? 'بطولة جديدة' : 'الجولة الجاية', false);
+  z.tourPainted = (cur.round | 0) + (cur.done ? .5 : 0);
+  z.stand0 = performance.now();
+}
+function fTourFrame(){                                                // every frame once a round is over: show the numbers when they arrive, count down, get ready on its own
+  const z = fs;
+  if(!(z.tourT > 0) || !z.tourShownAt || !endShown) return;
+  const cur = fTourCur(), have = !!(cur && (cur.round | 0) >= z.round), now = performance.now();
+  if(have){
+    z.reported = true;
+    if(z.tourPainted !== (cur.round | 0) + (cur.done ? .5 : 0)) fTourPaint();
+  }else{
+    if(z.tourPainted === -2 && now - z.tourShownAt > 10000){ z.tourPainted = -3; showOverlay('الجولة ' + z.round + ' خلصت', 'النتيجة اتأخرت. استنى شوية أو اضغط خروج.', 'استنى', false); el.btn.disabled = true; }
+    return;
+  }
+  if(cur.done) return;
+  const left = Math.max(0, FTOUR_WAIT - (now - z.stand0) / 1000);
+  let label;
+  if(z.online){
+    const mm = net.room && net.room.members.find(m => m.id === acct.id);
+    if(mm && mm.ready) label = 'مستني الباقيين...';
+    else{
+      label = 'جاهز للجولة الجاية (' + Math.ceil(left) + ')';
+      if(left <= 0 && now - z.autoAt > 1500 && net.room){ z.autoAt = now; rpc('zroom_ready', { p_ready:true }).then(r => { if(r && fs === z) net.room = r; }).catch(() => {}); }
+    }
+  }else{
+    label = 'الجولة الجاية (' + Math.ceil(left) + ')';
+    if(left <= 0 && canStart() && !el.overlay.hidden) startGame();
+  }
+  if(el.btn.textContent !== label) el.btn.textContent = label;
 }
 function fRank(){
-  return fs.fighters.slice().sort((a, b) => (b.dead ? b.dt : 1e9) - (a.dead ? a.dt : 1e9) || b.hp - a.hp || b.kills - a.kills);
+  return fs.fighters.slice().sort((a, b) => (b.dead ? b.dt : 1e9) - (a.dead ? a.dt : 1e9) || b.hp - a.hp || b.kills - a.kills || (a.id < b.id ? -1 : 1));       // the same order on every screen
 }
 function fOver(){
   const z = fs, m = z.me;
@@ -4647,10 +4814,14 @@ function fOver(){
   const rank = fRank(), winner = rank[0], won = winner === m && !m.gone;
   z.rank = rank; z.won = won;
   state = (won || z.online) ? 'finished' : 'dead'; endShown = false;
-  if(won){ fWins++; save('stickrun:fwins', fWins); el.best.textContent = fWins; }
+  if(won && !z.tourT){ fWins++; save('stickrun:fwins', fWins); el.best.textContent = fWins; }
+  if(z.tourT > 0){
+    if(!z.online) fTourOff = fTourApply(fTourOff, rank.map(f => ({ id:f.id, name:f.rname, kills:f.kills })), z.tourT);
+    else fTourReport();                                         // only the room's owner writes it
+  }
   if(z.online){ z.lastSend = 0; fSendPresence(); fNetEnd(); }
   beep(won ? 660 : 300, won ? 1320 : 120, .4, won ? 'triangle' : 'sawtooth', .06);
-  setTimeout(() => { if(state === 'finished' || state === 'dead') showFEnd(); }, 1400);
+  setTimeout(() => { if(state === 'finished' || state === 'dead') (z.tourT > 0 ? fTourEnd() : showFEnd()); }, 1400);
 }
 function showFEnd(){
   const z = fs; if(!z) return;
@@ -4967,7 +5138,8 @@ function drawFightScene(){
     if(f.dead || (f.remote && f.tx === undefined)) continue;
     const col = FCOL[f.ci % FCOL.length], ty = Math.max(16, ground - f.h - 92);
     ctx.save();
-    fText(f.name, f.x, ty, 13, f === m ? '#FFFFFF' : col);
+    const wn = fWinsOf(f.id);
+    fText(f.name + (wn ? ' ★' + wn : ''), f.x, ty, 13, f === m ? '#FFFFFF' : col);
     ctx.fillStyle = 'rgba(8,12,22,.65)'; ctx.fillRect(f.x - 23, ty + 4, 46, 7);
     ctx.fillStyle = col; ctx.fillRect(f.x - 22, ty + 5, 44 * Math.max(0, f.hp) / FHP, 5);
     ctx.restore();
@@ -5068,6 +5240,7 @@ function drawFHud(z, m){
   else if(lava >= 0) note = 'الحمم طالعة!';
   else if(t < FLAVA_AT - 8) note += ' · الحمم بعد ' + Math.ceil(FLAVA_AT - t) + ' ث';
   fText(note, 14, top + 14, 15, lava >= 0 ? '#FFB020' : '#FFFFFF', 'left');
+  if(z.tourT > 0) fText('جولة ' + z.round + ' · أول لـ ' + z.tourT, W / 2, top + 14, 14, '#FFE27A');
   if(t < FSAFE && state === 'playing') fText('استعد...', W / 2, HT * .2, 22);
   if(z.banner) fText(z.banner.text, W / 2, HT * .3, 20, '#FFC727');
   if(!m.dead && m.hp < 35){
@@ -5188,6 +5361,7 @@ async function fetchPageHash(){
 const busyNow = () =>
   state === 'countdown' || state === 'playing' || state === 'paused' ||
   (mode === 'online' && net.raceId && !net.resolved && state !== 'ready') ||
+  (fOn && fs && fs.tourT > 0 && !(fTourCur() && fTourCur().done)) ||
   !authEl.hidden || !bannedEl.hidden || !supEl.hidden || !storeEl.hidden ||
   (document.activeElement && /^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName));
 async function checkUpdate(){
